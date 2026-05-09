@@ -1,230 +1,195 @@
-# BuildTrack
+# BuildTrack 🏗️
 
-A production-ready construction management mobile app built with Expo, React Native, and Supabase.
+**Modern Construction Management Platform**
 
-## Features
+BuildTrack is a full-stack construction project management platform with native iOS, cross-platform mobile (React Native), web dashboard, and Node.js backend API.
 
-- **Authentication** — Email/password auth with Supabase Auth, session persistence via AsyncStorage
-- **Dashboard** — Real-time project overview with stats, quick actions, and recent activity
-- **Projects** — Full CRUD with budget, timeline, progress tracking, and geolocation
-- **Tasks** — Task management with priorities, assignments, due dates, and status tracking
-- **Safety** — Incident reporting and safety inspections with severity/status tracking
-- **Team** — Worker management with role breakdown and certification tracking
-- **Map** — Interactive map with project markers using react-native-maps
-- **Notifications** — Real-time push notifications with grouped inbox and swipe-to-delete
-- **Offline Support** — Automatic offline queue, background sync, and conflict resolution
-- **Real-time** — Live data updates via Supabase Realtime subscriptions
-- **Dark Mode** — Full dark mode support with system preference detection
+## 🏗️ Platform Overview
 
-## Tech Stack
+| Layer | Technology | Status |
+|-------|-----------|--------|
+| **iOS App** | SwiftUI + SwiftData + Supabase | ✅ Redesigned (blue theme) |
+| **Mobile App** | Expo + React Native + NativeWind | ✅ Enhanced UI/UX |
+| **Web Dashboard** | Next.js 14 + Tailwind + TanStack Query | ✅ Scaffolded |
+| **Backend API** | Node.js + Express + PostgreSQL | ✅ Complete |
+| **Database** | PostgreSQL + Redis | ✅ Schema + seeding |
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Expo SDK 50+ with Expo Router v3 |
-| UI | React Native with NativeWind (Tailwind CSS) |
-| State | Zustand with AsyncStorage persistence |
-| Backend | Supabase (local or cloud) |
-| Auth | Supabase Auth with email/password |
-| Database | PostgreSQL via Supabase |
-| Storage | Supabase Storage for photos |
-| Realtime | Supabase Realtime subscriptions |
-| Offline | Custom sync engine with AsyncStorage queue |
-| Maps | react-native-maps |
-| Notifications | expo-notifications |
-| Image Picker | expo-image-picker |
+---
 
-## Project Structure
+## 📱 iOS App (SwiftUI)
 
-```
-BuildTrack/
-├── app/                         # Expo Router file-based routes
-│   ├── (tabs)/                  # Main tab navigation
-│   │   ├── index.tsx            # Dashboard with stats
-│   │   ├── map.tsx              # Interactive project map
-│   │   ├── projects.tsx         # Projects list
-│   │   ├── tasks.tsx            # Tasks management
-│   │   ├── safety.tsx           # Safety records
-│   │   ├── team.tsx             # Team management
-│   │   └── notifications.tsx    # Notification inbox
-│   ├── (modals)/                # Modal screens
-│   │   ├── project-details.tsx  # Add/Edit project
-│   │   ├── task-details.tsx     # Add/Edit task
-│   │   └── safety-report.tsx    # Safety report modal
-│   ├── auth/                    # Auth screens
-│   │   ├── login.tsx            # Sign in
-│   │   ├── register.tsx         # Sign up
-│   │   └── _layout.tsx          # Auth layout
-│   ├── _layout.tsx              # Root layout with AuthGuard
-│   └── +not-found.tsx           # 404 page
-├── components/
-│   ├── ui/                      # Shared UI components
-│   │   ├── Card.tsx
-│   │   ├── StatCard.tsx
-│   │   ├── StatusBadge.tsx
-│   │   └── PriorityBadge.tsx
-│   ├── map/                     # Map components
-│   │   └── ProjectMarker.tsx
-│   └── notifications/           # Notification components
-│       └── NotificationCard.tsx
-├── contexts/
-│   └── AuthContext.tsx          # React Context for auth state
-├── hooks/
-│   ├── useSupabase.ts           # Data fetching & mutations
-│   ├── useRealtime.ts           # Realtime subscriptions
-│   ├── useNotifications.ts      # Push notifications
-│   ├── usePhotos.ts             # Photo upload/pick
-│   ├── useOfflineSync.ts        # Offline sync hook
-│   └── useColorScheme.ts      # Theme detection
-├── lib/
-│   ├── supabase.ts              # Supabase client config
-│   ├── offlineSync.ts           # Offline sync engine
-│   ├── api.ts                   # API helpers
-│   └── utils.ts                 # Formatting utilities
-├── stores/
-│   ├── projectsStore.ts         # Zustand project store (Supabase)
-│   ├── tasksStore.ts            # Zustand task store (Supabase)
-│   ├── safetyStore.ts           # Safety data store
-│   ├── teamStore.ts             # Team/worker store
-│   ├── notificationsStore.ts    # Notification state
-│   └── syncStore.ts             # Sync status store
-├── types/
-│   └── index.ts                 # Shared TypeScript types
-├── supabase/
-│   └── migrations/              # Database migrations
-├── constants/
-│   └── colors.ts                # App color palette
-└── eas.json                     # EAS Build configuration
-```
+### Features
+- **Onboarding Flow**: 5-slide walkthrough with mesh gradient backgrounds
+- **Auth**: Email/password, Apple Sign-In, Google OAuth, biometric auth
+- **Dashboard**: Stats cards, quick actions, recent projects
+- **Projects**: List with filter chips, swipe actions, context menus
+- **Tasks**: Priority filtering, checkbox completion, search
+- **Safety**: Incident reporting, inspections, severity badges
+- **Team**: Worker cards with roles, certifications
+- **Map**: Interactive site map with project markers
+- **Notifications**: Inbox with unread tracking, type filtering
+- **Settings**: Profile, security, dark mode, data export
 
-## Getting Started
+### Design System
+- Primary: `#2563EB` (Modern blue)
+- Cards with subtle shadows and continuous corner radius
+- Glassmorphism overlays
+- Spring animations throughout
+- Dark mode ready
 
-### Prerequisites
+---
 
-- Node.js 18+
-- npm or yarn
-- Supabase CLI (for local backend)
-- Android Studio or Xcode (for emulators)
+## 📲 Mobile App (Expo/React Native)
 
-### Local Supabase Setup
+### Features
+- **Auth Screens**: Animated login/register with social auth
+- **Onboarding**: 5-slide carousel with spring animations
+- **Dashboard**: Stats grid, recent projects, quick actions
+- **Projects**: Create with color picker, status selector
+- **Tasks**: Create with priority, project selector
+- **Safety**: Report incidents with severity picker
+- **Profile**: Biometric toggle, organized menu
 
-```bash
-# Install Supabase CLI if not already installed
-npm install -g supabase
+### API Integration
+- Custom API client (`services/api.ts`)
+- React Query hooks for caching and mutations
+- Backend sync with JWT auth
 
-# Start local Supabase
-cd BuildTrack
-supabase start
+---
 
-# Create database tables and seed data
-supabase db reset
-```
+## 🌐 Web Dashboard (Next.js)
 
-### App Setup
+### Pages
+- **Dashboard**: Stats cards, activity feed
+- **Projects**: List with search, status filter, progress bars
+- **Tasks**: List with status/priority filters
+- **Workers**: Grid cards with role colors
+- **Safety**: Incidents with severity/status badges
+- **Inspections**: Pass/fail status cards
+- **Notifications**: Unread count, mark all read
+- **Settings**: Profile, password, dark mode toggle
 
-```bash
-# Install dependencies (required due to peer dep conflicts)
-npm install --legacy-peer-deps
+### Tech Stack
+- Next.js 14 App Router
+- TypeScript
+- Tailwind CSS
+- TanStack Query
+- Axios with refresh token interceptors
 
-# Create environment file
-cp .env.example .env.local
-# Edit .env.local with your Supabase credentials
+---
 
-# Start development server
-npx expo start
+## 🔧 Backend API
 
-# Press 'w' for web preview
-# Press 'i' for iOS simulator (macOS only)
-# Press 'a' for Android emulator
-```
+### Endpoints
 
-### Default Local Supabase Credentials
+| Module | Routes |
+|--------|--------|
+| **Auth** | `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`, `GET /auth/me`, `PUT /auth/me`, `POST /auth/change-password` |
+| **Projects** | `GET /projects`, `POST /projects`, `GET /projects/:id`, `PUT /projects/:id`, `DELETE /projects/:id`, `GET /projects/:id/stats` |
+| **Tasks** | `GET /tasks`, `POST /tasks`, `GET /tasks/:id`, `PUT /tasks/:id`, `DELETE /tasks/:id`, `POST /tasks/:id/complete` |
+| **Workers** | `GET /workers`, `POST /workers`, `GET /workers/:id`, `PUT /workers/:id`, `DELETE /workers/:id` |
+| **Safety** | `GET /safety/incidents`, `POST /safety/incidents`, `GET /safety/incidents/:id`, `PUT /safety/incidents/:id`, `DELETE /safety/incidents/:id` |
+| **Inspections** | `GET /inspections`, `POST /inspections`, `GET /inspections/:id`, `PUT /inspections/:id`, `DELETE /inspections/:id` |
+| **Notifications** | `GET /notifications`, `PUT /notifications/:id/read`, `PUT /notifications/read-all`, `DELETE /notifications/:id` |
+| **Dashboard** | `GET /dashboard/stats`, `GET /dashboard/activity` |
+| **Admin** | `GET /admin/users`, `PUT /admin/users/:id`, `DELETE /admin/users/:id`, `GET /admin/stats` |
 
-The local Supabase instance runs at:
-- **API URL**: http://127.0.0.1:54321
-- **Database**: postgresql://postgres:postgres@127.0.0.1:54322/postgres
-
-### Environment Variables
-
-Create `.env.local`:
-
-```bash
-EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-EXPO_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
-```
-
-Get the anon key from `supabase status` or `supabase start` output.
-
-## Database Schema
-
-### Tables
-
-| Table | Purpose |
-|-------|---------|
-| `projects` | Construction projects |
-| `tasks` | Project tasks |
-| `incidents` | Safety incidents |
-| `inspections` | Safety inspections |
-| `workers` | Team members |
-| `photos` | Uploaded photos |
-| `notifications` | User notifications |
+### Database Schema
+- `users` - Authentication and profile
+- `projects` - Construction projects
+- `tasks` - Project tasks
+- `workers` - Team members
+- `safety_incidents` - Incident reports
+- `inspections` - Safety inspections
+- `notifications` - User notifications
+- `activity_logs` - Audit trail
+- `project_workers` - Many-to-many linking
+- `refresh_tokens` - JWT refresh tokens
 
 ### Security
+- JWT authentication with refresh tokens
+- Role-based access control (user/admin/super_admin)
+- Password strength validation
+- Rate limiting (100 requests/15 min)
+- CORS with credentials
+- Helmet security headers
 
-- **RLS enabled** on all tables
-- **Row-level policies** for user-scoped access
-- **Realtime subscriptions** enabled on all tables
-- **Storage bucket** `buildtrack-photos` with public access
+---
 
-## Offline Sync
+## 🚀 Quick Start
 
-The app includes a full offline sync system:
-
-1. **Queue mutations** when offline (stored in AsyncStorage)
-2. **Auto-sync** when connection returns (15-second polling)
-3. **Conflict resolution** via server timestamps (last-write-wins)
-4. **Retry with backoff** (up to 3 retries)
-5. **Cache fallback** for reads when offline (24h TTL)
-
-## Real-time Features
-
-- Live project updates across all connected clients
-- Real-time task changes with optimistic UI
-- Instant notification delivery
-- Map marker updates when project locations change
-
-## Building for Production
-
+### Backend
 ```bash
-# Configure EAS
-npx eas login
-npx eas build:configure
-
-# Preview build (APK for Android)
-npx eas build --profile preview --platform android
-
-# Production build
-npx eas build --profile production --platform all
-
-# OTA update
-npx eas update --branch production --message "Bug fixes"
+cd buildtrack-api
+cp .env.example .env
+# Edit .env with your DATABASE_URL and JWT_SECRET
+npm install
+npm run dev  # http://localhost:3001
 ```
 
-## Architecture Decisions
+### Web Dashboard
+```bash
+cd buildtrack-web
+npm install
+npm run dev  # http://localhost:3000
+```
 
-- **NativeWind over StyleSheet**: Tailwind-like utility classes with dark mode support
-- **Zustand over Redux**: Simpler API, less boilerplate, built-in persistence
-- **Supabase over Firebase**: Open-source, self-hostable, PostgreSQL relational data
-- **Expo Router over React Navigation**: File-based routing, zero config, SSR ready
-- **Modal pattern over stacks**: Modals for detail views keep tab context alive
+### Mobile (Expo)
+```bash
+cd BuildTrack
+npm install
+npx expo start
+```
 
-## Performance
+### iOS
+Open `BuildTrack.xcodeproj` in Xcode 15+ and build for iOS 17+
 
-- Optimistic UI updates (no waiting for server)
-- Persistent stores with AsyncStorage
-- Image lazy loading and caching
-- Debounced search and filtering
-- Background sync for offline queue
+---
 
-## License
+## 📦 Deployment
 
-MIT
+### Backend
+- Docker support planned
+- Environment variables for production
+- PM2 process management
+- nginx reverse proxy
+
+### Web
+- Vercel deployment ready
+- Environment variables for API URL
+
+### iOS
+- GitHub Actions CI/CD
+- EAS Cloud builds
+- TestFlight submission via `fastlane produce`
+
+---
+
+## 🔐 Environment Variables
+
+### Backend (.env)
+```
+DATABASE_URL=postgresql://user:pass@host:5432/buildtrack
+JWT_SECRET=your-secret-key
+JWT_REFRESH_SECRET=your-refresh-secret
+PORT=3001
+NODE_ENV=production
+CORS_ORIGIN=https://dashboard.buildtrack.app
+```
+
+### Mobile (.env)
+```
+EXPO_PUBLIC_API_URL=https://api.buildtrack.app
+EXPO_PUBLIC_SUPABASE_URL=your-supabase-url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+---
+
+## 📝 License
+
+MIT License - Copyright (c) 2026 BuildTrack
+
+---
+
+Built with ❤️ by StancaInvest
