@@ -113,14 +113,16 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_billing_events_unique_stripe_event
     ON billing_events(stripe_event_id, event_type);
 
 -- --------------------------------------------------------------------------
--- 5. Triggers
+-- 5. Triggers (drop first to avoid conflicts)
 -- --------------------------------------------------------------------------
-CREATE TRIGGER IF NOT EXISTS update_subscriptions_updated_at
+DROP TRIGGER IF EXISTS update_subscriptions_updated_at ON subscriptions;
+CREATE TRIGGER update_subscriptions_updated_at
     BEFORE UPDATE ON subscriptions
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER IF NOT EXISTS update_subscription_items_updated_at
+DROP TRIGGER IF EXISTS update_subscription_items_updated_at ON subscription_items;
+CREATE TRIGGER update_subscription_items_updated_at
     BEFORE UPDATE ON subscription_items
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();

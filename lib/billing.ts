@@ -1,4 +1,10 @@
-import { useSubscription } from '../hooks/useSubscription';
+// ============================================================================
+// BuildTrack: Local Billing (Stripe-free)
+// ============================================================================
+// Admin-managed subscription tiers. No payment processing.
+// Users can be upgraded/downgraded via admin panel.
+
+import { useSubscription as useSubHook } from '../hooks/useSubscription';
 import type { SubscriptionTier, TierLimits } from '../types';
 
 export const TIER_ORDER: SubscriptionTier[] = ['free', 'pro', 'enterprise'];
@@ -29,36 +35,60 @@ export function isWithinLimit(
   return usage < max;
 }
 
-// Hard limits for client-side validation before hitting the DB
 export const LIMIT_MESSAGES: Record<string, string> = {
-  max_projects: "You've reached your project limit. Upgrade to add more.",
-  max_team_members: "You've reached your team member limit. Upgrade to add more.",
-  max_storage_gb: "Storage limit reached. Upgrade for more space.",
+  max_projects: "You've reached your project limit. Contact admin to upgrade.",
+  max_team_members: "You've reached your team member limit. Contact admin to upgrade.",
+  max_storage_gb: "Storage limit reached. Contact admin to upgrade.",
 };
 
-// Stripe Price IDs — update these after creating products in Stripe Dashboard
-export const STRIPE_PRICE_IDS: Record<SubscriptionTier, string | null> = {
-  free: null,
-  pro: process.env.EXPO_PUBLIC_STRIPE_PRICE_PRO || 'price_pro_monthly_placeholder',
-  enterprise: process.env.EXPO_PUBLIC_STRIPE_PRICE_ENTERPRISE || 'price_enterprise_monthly_placeholder',
-};
+// Local tier upgrade — admin calls this directly
+export async function setUserTier(userId: string, tier: SubscriptionTier, adminId: string) {
+  const { supabase } = await import('../lib/supabase');
 
-// Checkout session creation helper (calls edge function)
-export async function createCheckoutSession(tier: SubscriptionTier, returnUrl: string): Promise<string | null> {
-  try {
-    const priceId = STRIPE_PRICE_IDS[tier];
-    if (!priceId) throw new Error('Invalid tier or price not configured');
+  // Verify admin
+  const { data: adminProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', adminId)
+    .single();
 
-    const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/stripe/create-checkout-session`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ priceId, returnUrl }),
-    });
-
-    if (!response.ok) throw new Error('Failed to create checkout session');
-    const { url } = await response.json();
-    return url;
-  } catch {
-    return null;
+  if (!adminProfile || (adminProfile.role !== 'admin' && adminProfile.role !== 'super_admin')) {
+    throw new Error('Unauthorized: admin role required');
   }
+
+  // Update profile
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ subscription_tier: tier, subscription_status: 'active' })
+    .eq('id', userId);
+
+  if (profileError) throw profileError;
+
+  // Upsert subscription record
+  const { data: existing } = await supabase
+    .from('subscriptions')
+    .select('id')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase
+      .from('subscriptions')
+      .update({ tier, status: 'active', updated_at: new Date().toISOString() })
+      .eq('id', existing.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase
+      .from('subscriptions')
+      .insert({
+        user_id: userId,
+        tier,
+        status: 'active',
+        current_period_start: new Date().toISOString(),
+        current_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      });
+    if (error) throw error;
+  }
+
+  return { success: true };
 }

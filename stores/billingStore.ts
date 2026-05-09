@@ -1,3 +1,7 @@
+// ============================================================================
+// BuildTrack Billing Store — Local/Stripe-free version
+// ============================================================================
+
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -5,6 +9,7 @@ import { supabase } from '../lib/supabase';
 
 export type SubscriptionTier = 'free' | 'pro' | 'enterprise';
 export type SubscriptionStatus = 'active' | 'inactive' | 'past_due' | 'cancelled' | 'trialing';
+export type UserRole = 'user' | 'admin' | 'super_admin';
 
 export interface TierLimits {
   tier: SubscriptionTier;
@@ -44,7 +49,7 @@ export interface BillingEvent {
 export interface UserProfile {
   id: string;
   email?: string;
-  role: 'user' | 'admin' | 'super_admin';
+  role: UserRole;
   stripe_customer_id: string | null;
   subscription_tier: SubscriptionTier;
   subscription_status: SubscriptionStatus;
@@ -53,7 +58,6 @@ export interface UserProfile {
 }
 
 interface BillingState {
-  // Current user's subscription
   subscription: Subscription | null;
   limits: TierLimits | null;
   usage: {
@@ -61,8 +65,6 @@ interface BillingState {
     teamMembers: number;
     storageBytes: number;
   };
-
-  // Admin data
   isAdmin: boolean;
   adminStats: {
     total_users: number;
@@ -77,12 +79,9 @@ interface BillingState {
   } | null;
   allUsers: UserProfile[];
   allSubscriptions: Subscription[];
-
-  // UI state
   loading: boolean;
   error: string | null;
 
-  // Actions
   setSubscription: (sub: Subscription | null) => void;
   setLimits: (limits: TierLimits | null) => void;
   setUsage: (usage: Partial<BillingState['usage']>) => void;
@@ -93,13 +92,13 @@ interface BillingState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 
-  // Supabase
   fetchSubscription: () => Promise<void>;
   fetchAdminStats: () => Promise<void>;
   fetchAllUsers: () => Promise<void>;
   fetchUsage: () => Promise<void>;
   checkAdminRole: () => Promise<boolean>;
   refreshBilling: () => Promise<void>;
+  upgradeUserTier: (userId: string, tier: SubscriptionTier) => Promise<void>;
 }
 
 export const useBillingStore = create<BillingState>()(
@@ -131,7 +130,6 @@ export const useBillingStore = create<BillingState>()(
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) throw new Error('Not authenticated');
 
-          // Get subscription via RPC
           const { data, error } = await supabase.rpc('get_user_subscription', {
             user_uuid: user.id,
           });
@@ -144,14 +142,12 @@ export const useBillingStore = create<BillingState>()(
           } | null;
 
           if (payload?.subscription && payload.subscription.id) {
-            const sub = payload.subscription as unknown as Subscription;
             set({
-              subscription: sub,
+              subscription: payload.subscription as unknown as Subscription,
               limits: payload.limits as unknown as TierLimits,
               loading: false,
             });
           } else {
-            // No active subscription — default to free limits
             const { data: tierData, error: tierError } = await supabase
               .from('tier_limits')
               .select('*')
@@ -227,7 +223,7 @@ export const useBillingStore = create<BillingState>()(
             },
           });
         } catch {
-          // Silent fail — usage is non-critical
+          // Silent fail
         }
       },
 
@@ -266,6 +262,71 @@ export const useBillingStore = create<BillingState>()(
         if (isAdmin) {
           await get().fetchAdminStats();
           await get().fetchAllUsers();
+        }
+      },
+
+      // Local admin-managed tier upgrade (no Stripe)
+      upgradeUserTier: async (userId: string, tier: SubscriptionTier) => {
+        set({ loading: true, error: null });
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) throw new Error('Not authenticated');
+
+          const { data: adminProfile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+          if (!adminProfile || (adminProfile.role !== 'admin' && adminProfile.role !== 'super_admin')) {
+            throw new Error('Admin privileges required');
+          }
+
+          // Update profile
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({ subscription_tier: tier, subscription_status: 'active' })
+            .eq('id', userId);
+
+          if (profileError) throw profileError;
+
+          // Upsert subscription
+          const { data: existing } = await supabase
+            .from('subscriptions')
+            .select('id')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+          const oneYear = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+
+          if (existing) {
+            const { error } = await supabase
+              .from('subscriptions')
+              .update({ tier, status: 'active', updated_at: new Date().toISOString(), current_period_end: oneYear })
+              .eq('id', existing.id);
+            if (error) throw error;
+          } else {
+            const { error } = await supabase
+              .from('subscriptions')
+              .insert({
+                user_id: userId,
+                tier,
+                status: 'active',
+                current_period_start: new Date().toISOString(),
+                current_period_end: oneYear,
+              });
+            if (error) throw error;
+          }
+
+          // Refresh admin data
+          await get().fetchAllUsers();
+          set({ loading: false });
+        } catch (err) {
+          set({
+            error: err instanceof Error ? err.message : 'Failed to upgrade user',
+            loading: false,
+          });
+          throw err;
         }
       },
     }),
