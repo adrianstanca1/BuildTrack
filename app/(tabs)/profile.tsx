@@ -9,6 +9,7 @@ import { useNotificationsStore } from '../../stores/notificationsStore';
 import { useSyncStore } from '../../stores/syncStore';
 import { colors } from '../../constants/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ONBOARDING_KEY } from '../../constants/storage';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -32,7 +33,7 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             await signOut();
-            await AsyncStorage.removeItem('hasCompletedOnboarding');
+            await AsyncStorage.removeItem(ONBOARDING_KEY);
             router.replace('/auth/login');
           },
         },
@@ -49,7 +50,7 @@ export default function ProfileScreen() {
         {
           text: 'Reset',
           onPress: async () => {
-            await AsyncStorage.removeItem('hasCompletedOnboarding');
+            await AsyncStorage.removeItem(ONBOARDING_KEY);
             Alert.alert('Done', 'Onboarding will be shown on next app launch.');
           },
         },

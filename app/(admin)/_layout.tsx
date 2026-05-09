@@ -1,34 +1,27 @@
 import { Stack } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { Redirect } from 'expo-router';
+import { useColorScheme } from 'react-native';
 
 export default function AdminLayout() {
   const { user } = useAuth();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
 
   if (!user) {
-    return <Redirect href="/(onboarding)/auth" />;
+    return <Redirect href="/auth/login" />;
   }
 
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: '#1F2937' },
-        headerTintColor: '#fff',
+        headerShown: true,
+        headerStyle: { backgroundColor: isDark ? '#18181b' : '#ffffff' },
+        headerTintColor: isDark ? '#ffffff' : '#111827',
         headerTitleStyle: { fontWeight: 'bold' },
       }}
     >
-      <Stack.Screen
-        name="index"
-        options={{ title: 'Admin Dashboard' }}
-      />
-      <Stack.Screen
-        name="users"
-        options={{ title: 'User Management' }}
-      />
-      <Stack.Screen
-        name="projects"
-        options={{ title: 'All Projects' }}
-      />
+      <Stack.Screen name="index" options={{ title: 'Admin Dashboard', headerBackVisible: false }} />
     </Stack>
   );
 }

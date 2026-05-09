@@ -1,0 +1,70 @@
+#!/usr/bin/expect -f
+set timeout 300
+
+spawn npx eas credentials --platform ios
+
+expect "Which build profile do you want to configure?"
+send "\033\[B"
+send "\033\[B"
+send "\r"
+
+expect {
+    "Apple Team Type" {
+        send "\r"
+        exp_continue
+    }
+    "Build Credentials" {
+        send "\r"
+        exp_continue
+    }
+    "Set up all" {
+        send "\r"
+        exp_continue
+    }
+    "certificate" {
+        send "\r"
+        exp_continue
+    }
+    "profile" {
+        send "\r"
+        exp_continue
+    }
+    "two-factor" {
+        puts "\n\n2FA REQUIRED - cannot proceed automatically"
+        exit 1
+    }
+    "verification code" {
+        puts "\n\n2FA REQUIRED - cannot proceed automatically"
+        exit 1
+    }
+    "Apple ID" {
+        send "\r"
+        exp_continue
+    }
+    "Password" {
+        send "\r"
+        exp_continue
+    }
+    "✔" {
+        exp_continue
+    }
+    "Error" {
+        puts "\n\n[ERROR]"
+        exit 1
+    }
+    "timeout" {
+        puts "\n\n[TIMEOUT]"
+        exit 1
+    }
+    "Press any key" {
+        send "\r"
+        exp_continue
+    }
+    "Success" {
+        puts "\n\n[SUCCESS]"
+        exit 0
+    }
+    eof {
+        exit 0
+    }
+}
