@@ -13,9 +13,12 @@ import { COLORS, RADIUS, TYPOGRAPHY } from '../../constants/theme';
 interface ButtonProps extends PressableProps {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  title?: string; // backward compat alias
   isLoading?: boolean;
+  loading?: boolean; // backward compat alias
   isDisabled?: boolean;
+  disabled?: boolean; // backward compat alias
   iconLeft?: keyof typeof Ionicons.glyphMap;
   iconRight?: keyof typeof Ionicons.glyphMap;
   fullWidth?: boolean;
@@ -25,8 +28,11 @@ export function Button({
   variant = 'primary',
   size = 'md',
   children,
+  title,
   isLoading,
+  loading,
   isDisabled,
+  disabled,
   iconLeft,
   iconRight,
   fullWidth = true,
@@ -37,7 +43,11 @@ export function Button({
   const isDark = colorScheme === 'dark';
   const c = isDark ? COLORS.dark : COLORS.light;
 
-  const disabled = isLoading || isDisabled;
+  const _isLoading = isLoading ?? loading;
+  const _isDisabled = isDisabled ?? disabled;
+  const _children = children ?? title;
+
+  const disabledState = _isLoading || _isDisabled;
 
   const variantStyles: Record<string, ViewStyle> = {
     primary: {
@@ -83,14 +93,14 @@ export function Button({
 
   return (
     <Pressable
-      disabled={disabled}
+      disabled={disabledState}
       style={({ pressed }) => [
         {
           borderRadius: RADIUS.lg,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          opacity: disabled ? 0.5 : pressed ? 0.9 : 1,
+          opacity: disabledState ? 0.5 : pressed ? 0.9 : 1,
           transform: [{ scale: pressed ? 0.98 : 1 }],
           width: fullWidth ? '100%' : undefined,
         },
@@ -120,7 +130,7 @@ export function Button({
               lineHeight: textSizes[size] + 4,
             }}
           >
-            {children}
+            {_children}
           </Text>
           {iconRight && (
             <Ionicons

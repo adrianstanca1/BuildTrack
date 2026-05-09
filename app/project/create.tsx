@@ -68,7 +68,7 @@ export default function CreateProjectScreen() {
 
   const labelStyle = {
     fontSize: TYPOGRAPHY.caption.fontSize,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: COLORS.dark.textMuted,
     marginBottom: SPACING.xs,
     marginTop: SPACING.md,

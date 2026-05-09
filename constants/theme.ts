@@ -25,6 +25,7 @@ export const COLORS = {
   // Neutrals (light)
   light: {
     bg: '#ffffff',
+    background: '#ffffff', // backward compat
     surface: '#f8fafc',
     elevated: '#ffffff',
     border: '#e2e8f0',
@@ -36,10 +37,17 @@ export const COLORS = {
     inputBorder: '#cbd5e1',
     cardBg: '#f8fafc',
     overlay: 'rgba(15, 23, 42, 0.5)',
+    primary: '#3b82f6', // backward compat
+    accent: '#60a5fa', // backward compat
+    success: '#22c55e', // backward compat
+    warning: '#f59e0b', // backward compat
+    danger: '#ef4444', // backward compat
+    info: '#3b82f6', // backward compat
   },
   // Neutrals (dark)
   dark: {
     bg: '#0f172a',
+    background: '#0f172a', // backward compat
     surface: '#1e293b',
     elevated: '#334155',
     border: '#334155',
@@ -51,6 +59,12 @@ export const COLORS = {
     inputBorder: '#334155',
     cardBg: '#1e293b',
     overlay: 'rgba(0, 0, 0, 0.7)',
+    primary: '#3b82f6', // backward compat
+    accent: '#60a5fa', // backward compat
+    success: '#22c55e', // backward compat
+    warning: '#f59e0b', // backward compat
+    danger: '#ef4444', // backward compat
+    info: '#3b82f6', // backward compat
   },
 } as const;
 
@@ -74,16 +88,16 @@ export const RADIUS = {
 } as const;
 
 export const TYPOGRAPHY = {
-  display: { size: 36, weight: '700' as const, lineHeight: 44 },
-  h1: { size: 30, weight: '700' as const, lineHeight: 38 },
-  h2: { size: 24, weight: '600' as const, lineHeight: 32 },
-  h3: { size: 20, weight: '600' as const, lineHeight: 28 },
-  body: { size: 16, weight: '400' as const, lineHeight: 24 },
-  bodyMedium: { size: 16, weight: '500' as const, lineHeight: 24 },
-  caption: { size: 14, weight: '400' as const, lineHeight: 20 },
-  captionMedium: { size: 14, weight: '500' as const, lineHeight: 20 },
-  small: { size: 12, weight: '500' as const, lineHeight: 16 },
-  overline: { size: 11, weight: '600' as const, lineHeight: 16, letterSpacing: 0.5 },
+  display: { size: 36, weight: '700' as const, lineHeight: 44, fontSize: 36, fontWeight: '700' as const },
+  h1: { size: 30, weight: '700' as const, lineHeight: 38, fontSize: 30, fontWeight: '700' as const },
+  h2: { size: 24, weight: '600' as const, lineHeight: 32, fontSize: 24, fontWeight: '600' as const },
+  h3: { size: 20, weight: '600' as const, lineHeight: 28, fontSize: 20, fontWeight: '600' as const },
+  body: { size: 16, weight: '400' as const, lineHeight: 24, fontSize: 16, fontWeight: '400' as const },
+  bodyMedium: { size: 16, weight: '500' as const, lineHeight: 24, fontSize: 16, fontWeight: '500' as const },
+  caption: { size: 14, weight: '400' as const, lineHeight: 20, fontSize: 14, fontWeight: '400' as const },
+  captionMedium: { size: 14, weight: '500' as const, lineHeight: 20, fontSize: 14, fontWeight: '500' as const },
+  small: { size: 12, weight: '500' as const, lineHeight: 16, fontSize: 12, fontWeight: '500' as const },
+  overline: { size: 11, weight: '600' as const, lineHeight: 16, letterSpacing: 0.5, fontSize: 11, fontWeight: '600' as const },
 } as const;
 
 export const SHADOWS = {
