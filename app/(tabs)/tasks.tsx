@@ -9,7 +9,7 @@ import { colors } from '../../constants/colors';
 
 export default function TasksScreen() {
   const router = useRouter();
-  const { tasks, updateTaskStatus } = useTasksStore();
+  const { tasks, toggleTaskStatus } = useTasksStore();
 
   const sortedTasks = [...tasks].sort((a, b) => {
     const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
@@ -66,7 +66,7 @@ export default function TasksScreen() {
                   </View>
 
                   <Pressable
-                    onPress={() => updateTaskStatus(item.id, item.status === 'completed' ? 'pending' : 'completed')}
+                    onPress={() => toggleTaskStatus(item.id)}
                     className={`px-3 py-1 rounded-full ${
                       item.status === 'completed' 
                         ? 'bg-green-100 dark:bg-green-900' 

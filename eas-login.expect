@@ -1,0 +1,75 @@
+#!/usr/bin/expect -f
+set timeout 120
+set apple_password "Cumparavinde1"
+
+spawn eas credentials --platform ios
+
+# Navigate through initial menus
+expect "Which build profile" {
+    send "\033\[B\033\[B\033\[B\033\[B\r"
+}
+
+expect "Select your Apple Team Type" {
+    send "\033\[B\033\[B\r"
+}
+
+expect "Apple Team ID:" {
+    send "4G3G5MX9BH\r"
+}
+
+expect "Build Credentials: Manage everything" {
+    send "\r"
+}
+
+expect "All: Set up all" {
+    send "\r"
+}
+
+# Wait for the Apple ID prompt during linking
+expect {
+    "Apple ID:" {
+        # Type Apple ID fresh (will overwrite any pre-filled hint)
+        sleep 0.5
+        send "adrian.stanca1@icloud.com\r"
+        exp_continue
+    }
+    "Password (for adrian.stanca1@icloud.com):" {
+        sleep 0.5
+        send "$apple_password\r"
+        exp_continue
+    }
+    "two-factor" {
+        puts "\n\n[2FA REQUIRED - APPLE LOGIN SUCCESS!]"
+        puts "Check your Apple device for the 6-digit code."
+        puts "\nType the 6-digit code and press Enter:\n"
+        interact
+    }
+    "Generate a new Apple Developer Program membership certificate" {
+        send "\r"
+        exp_continue
+    }
+    "Generate a new Apple Developer Program provisioning profile" {
+        send "\r"
+        exp_continue
+    }
+    "Press any key to continue" {
+        send "\r"
+        exp_continue
+    }
+    "Error" {
+        puts "\n\n[ERROR]"
+        exit 1
+    }
+    "locked" {
+        puts "\n\n[ACCOUNT LOCKED]"
+        exit 1
+    }
+    timeout {
+        puts "\n\n[TIMEOUT]"
+        exit 1
+    }
+    eof {
+        puts "\n\n[COMPLETED]"
+        exit 0
+    }
+}

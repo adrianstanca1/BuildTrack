@@ -1,0 +1,99 @@
+#!/usr/bin/expect -f
+set timeout 300
+set apple_password "Cumparavinde1"
+set arrow_down "\033\[B"
+
+spawn eas credentials --platform ios
+
+expect {
+    "Which build profile" {
+        for {set i 0} {$i < 4} {incr i} {
+            send $arrow_down
+            sleep 0.2
+        }
+        send "\r"
+        exp_continue
+    }
+    "Select your Apple Team Type" {
+        for {set i 0} {$i < 2} {incr i} {
+            send $arrow_down
+            sleep 0.2
+        }
+        send "\r"
+        exp_continue
+    }
+    "Apple Team ID:" {
+        sleep 0.5
+        send "4G3G5MX9BH\r"
+        exp_continue
+    }
+    "Build Credentials: Manage everything" {
+        send "\r"
+        exp_continue
+    }
+    "All: Set up all" {
+        send "\r"
+        exp_continue
+    }
+    # Apple ID prompt with pre-filled hint - JUST press Enter
+    -re "Apple ID:.*adrian.stanca1@icloud.com" {
+        sleep 0.5
+        send "\r"
+        exp_continue
+    }
+    # Password prompt for correct Apple ID
+    -re "Password.*adrian.stanca1" {
+        sleep 0.5
+        send "$apple_password\r"
+        exp_continue
+    }
+    "Generate a new Apple Developer Program membership certificate" {
+        sleep 0.5
+        send "\r"
+        exp_continue
+    }
+    "Generate a new Apple Developer Program provisioning profile" {
+        sleep 0.5
+        send "\r"
+        exp_continue
+    }
+    "two-factor" {
+        puts "\n\n===== 2FA REQUIRED ====="
+        puts "Check your Apple device (iPhone/iPad/Mac) for a 6-digit code."
+        puts "\nType the 6-digit code and press Enter:\n"
+        interact
+    }
+    "verification code" {
+        puts "\n\n===== 2FA REQUIRED ====="
+        puts "Check your Apple device for a 6-digit code."
+        interact
+    }
+    "6-digit" {
+        puts "\n\n===== 2FA REQUIRED ====="
+        interact
+    }
+    -re "certificate.*generated|profile.*generated|credentials set up|Success.*credentials|✔.*certificate|✔.*profile" {
+        puts "\n\n===== SUCCESS! iOS credentials configured! ====="
+        exit 0
+    }
+    "Press any key to continue" {
+        send "\r"
+        exp_continue
+    }
+    "Error" {
+        puts "\n\n[ERROR]"
+        exit 1
+    }
+    "locked" {
+        puts "\n\n[ACCOUNT LOCKED]"
+        exit 1
+    }
+    timeout {
+        puts "\n\n[TIMEOUT]"
+        exit 1
+    }
+    eof {
+        puts "\n\n[EOF]"
+        exit 0
+    }
+}

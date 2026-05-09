@@ -2,13 +2,14 @@ import { View, Text, TextInput, Pressable, ScrollView, Alert } from 'react-nativ
 import { useState } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useProjectsStore, Project, ProjectStatus } from '../../stores/projectsStore';
+import { useProjectsStore } from '../../stores/projectsStore';
+import type { Project, ProjectStatus } from '../../types';
 import { colors } from '../../constants/colors';
 
 export default function ProjectDetailsModal() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { projects, addProject, updateProject } = useProjectsStore();
+  const { projects, updateProject, createProject } = useProjectsStore();
 
   const existing = id ? projects.find(p => p.id === id as string) : undefined;
   const isEditing = !!existing;
@@ -26,7 +27,7 @@ export default function ProjectDetailsModal() {
       return;
     }
 
-    const projectData = {
+    const projectData: Omit<Project, 'id' | 'createdAt'> = {
       name: name.trim(),
       location: location.trim(),
       budget: parseFloat(budget) || 0,
@@ -39,9 +40,9 @@ export default function ProjectDetailsModal() {
     };
 
     if (isEditing) {
-      updateProject(id as string, projectData);
+      updateProject(id as string, projectData as any);
     } else {
-      addProject(projectData);
+      createProject(projectData as any);
     }
 
     router.back();

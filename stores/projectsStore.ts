@@ -1,114 +1,144 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-export type ProjectStatus = 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled';
-
-export interface Project {
-  id: string;
-  name: string;
-  location: string;
-  description?: string;
-  budget: number;
-  progress: number;
-  status: ProjectStatus;
-  startDate: string;
-  endDate: string;
-  teamSize: number;
-  createdAt: string;
-}
+import { supabase } from '../lib/supabase';
+import type { Project } from '../types';
 
 interface ProjectsState {
   projects: Project[];
-  addProject: (project: Partial<Project>) => void;
+  loading: boolean;
+  error: string | null;
+  selectedProject: Project | null;
+  
+  // Actions
+  setProjects: (projects: Project[]) => void;
+  addProject: (project: Project) => void;
   updateProject: (id: string, updates: Partial<Project>) => void;
-  deleteProject: (id: string) => void;
-  getProjectById: (id: string) => Project | undefined;
+  removeProject: (id: string) => void;
+  setSelectedProject: (project: Project | null) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  
+  // Supabase
+  fetchProjects: () => Promise<void>;
+  createProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Project | null>;
+  deleteProject: (id: string) => Promise<void>;
 }
-
-const initialProjects: Project[] = [
-  {
-    id: 'proj-1',
-    name: 'Riverside Apartments',
-    location: '123 River Rd, Downtown',
-    description: 'Luxury apartment complex with 120 units, underground parking, and rooftop amenities.',
-    budget: 2500000,
-    progress: 65,
-    status: 'active',
-    startDate: '2026-01-15',
-    endDate: '2026-12-31',
-    teamSize: 45,
-    createdAt: '2026-01-10',
-  },
-  {
-    id: 'proj-2',
-    name: 'Metro Office Tower',
-    location: '456 Metro Ave, Business District',
-    description: '30-story commercial office building with LEED Platinum certification goals.',
-    budget: 8500000,
-    progress: 30,
-    status: 'active',
-    startDate: '2026-02-01',
-    endDate: '2027-06-30',
-    teamSize: 120,
-    createdAt: '2026-01-20',
-  },
-  {
-    id: 'proj-3',
-    name: 'Community Center Renovation',
-    location: '789 Oak St, Westside',
-    description: 'Renovation of existing community center including HVAC, electrical, and accessibility upgrades.',
-    budget: 450000,
-    progress: 90,
-    status: 'active',
-    startDate: '2026-03-01',
-    endDate: '2026-06-15',
-    teamSize: 20,
-    createdAt: '2026-02-15',
-  },
-];
 
 export const useProjectsStore = create<ProjectsState>()(
   persist(
     (set, get) => ({
-      projects: initialProjects,
+      projects: [],
+      loading: false,
+      error: null,
+      selectedProject: null,
 
-      addProject: (projectData) => {
-        const newProject: Project = {
-          id: `proj-${Date.now()}`,
-          name: projectData.name || 'Untitled Project',
-          location: projectData.location || '',
-          description: projectData.description || '',
-          budget: projectData.budget || 0,
-          progress: projectData.progress || 0,
-          status: projectData.status || 'planning',
-          startDate: projectData.startDate || new Date().toISOString(),
-          endDate: projectData.endDate || new Date().toISOString(),
-          teamSize: projectData.teamSize || 0,
-          createdAt: new Date().toISOString(),
-        };
-        set({ projects: [...get().projects, newProject] });
+      setProjects: (projects) => set({ projects }),
+      addProject: (project) => set((state) => ({ projects: [project, ...state.projects] })),
+      updateProject: (id, updates) => set((state) => ({
+        projects: state.projects.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+      })),
+      removeProject: (id) => set((state) => ({
+        projects: state.projects.filter((p) => p.id !== id),
+      })),
+      setSelectedProject: (project) => set({ selectedProject: project }),
+      setLoading: (loading) => set({ loading }),
+      setError: (error) => set({ error }),
+
+      fetchProjects: async () => {
+        set({ loading: true, error: null });
+        try {
+          const { data, error } = await supabase
+            .from('projects')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (error) throw error;
+
+          const projects = (data || []).map((item) => ({
+            id: item.id,
+            name: item.name,
+            location: item.location,
+            description: item.description,
+            budget: item.budget,
+            progress: item.progress,
+            status: item.status,
+            startDate: item.start_date,
+            endDate: item.end_date,
+            teamSize: item.team_size,
+            latitude: item.latitude,
+            longitude: item.longitude,
+            createdAt: item.created_at,
+          }));
+
+          set({ projects, loading: false });
+        } catch (err) {
+          set({ error: err instanceof Error ? err.message : 'Failed to fetch projects', loading: false });
+        }
       },
 
-      updateProject: (id, updates) => {
-        set({
-          projects: get().projects.map(p =>
-            p.id === id ? { ...p, ...updates } : p
-          ),
-        });
+      createProject: async (projectData) => {
+        set({ loading: true, error: null });
+        try {
+          const { data, error } = await supabase
+            .from('projects')
+            .insert({
+              name: projectData.name,
+              location: projectData.location,
+              description: projectData.description,
+              budget: projectData.budget,
+              progress: projectData.progress,
+              status: projectData.status,
+              start_date: projectData.startDate,
+              end_date: projectData.endDate,
+              team_size: projectData.teamSize,
+              latitude: projectData.latitude,
+              longitude: projectData.longitude,
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+
+          const project: Project = {
+            id: data.id,
+            name: data.name,
+            location: data.location,
+            description: data.description,
+            budget: data.budget,
+            progress: data.progress,
+            status: data.status,
+            startDate: data.start_date,
+            endDate: data.end_date,
+            teamSize: data.team_size,
+            latitude: data.latitude,
+            longitude: data.longitude,
+            createdAt: data.created_at,
+          };
+
+          set((state) => ({ projects: [project, ...state.projects], loading: false }));
+          return project;
+        } catch (err) {
+          set({ error: err instanceof Error ? err.message : 'Failed to create project', loading: false });
+          return null;
+        }
       },
 
-      deleteProject: (id) => {
-        set({ projects: get().projects.filter(p => p.id !== id) });
-      },
-
-      getProjectById: (id) => {
-        return get().projects.find(p => p.id === id);
+      deleteProject: async (id) => {
+        set({ loading: true, error: null });
+        try {
+          const { error } = await supabase.from('projects').delete().eq('id', id);
+          if (error) throw error;
+          set((state) => ({ projects: state.projects.filter((p) => p.id !== id), loading: false }));
+        } catch (err) {
+          set({ error: err instanceof Error ? err.message : 'Failed to delete project', loading: false });
+        }
       },
     }),
     {
-      name: 'projects-storage',
+      name: 'buildtrack-projects',
       storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({ projects: state.projects }),
     }
   )
 );

@@ -1,5 +1,5 @@
 import { View, Text } from 'react-native';
-import { TaskPriority } from '../../stores/tasksStore';
+import type { TaskPriority } from '../../types';
 
 interface PriorityBadgeProps {
   priority: TaskPriority;

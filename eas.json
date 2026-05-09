@@ -1,26 +1,80 @@
 {
   "cli": {
-    "version": ">= 7.0.0"
+    "version": ">= 7.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "http://127.0.0.1:54321",
+        "EXPO_PUBLIC_API_URL": "http://127.0.0.1:54321/api"
+      },
+      "ios": {
+        "resourceClass": "medium"
+      },
+      "android": {
+        "resourceClass": "medium"
+      }
     },
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://buildtrack.cortexbuildpro.com",
+        "EXPO_PUBLIC_API_URL": "https://buildtrack.cortexbuildpro.com/api"
+      },
       "android": {
-        "buildType": "apk"
-      }
+        "buildType": "apk",
+        "resourceClass": "medium"
+      },
+      "ios": {
+        "resourceClass": "medium",
+        "simulator": false
+      },
+      "channel": "preview",
+      "autoIncrement": true
     },
     "production": {
+      "distribution": "store",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://buildtrack.cortexbuildpro.com",
+        "EXPO_PUBLIC_API_URL": "https://buildtrack.cortexbuildpro.com/api"
+      },
+      "android": {
+        "buildType": "app-bundle",
+        "resourceClass": "medium"
+      },
+      "ios": {
+        "resourceClass": "medium"
+      },
+      "channel": "production",
       "autoIncrement": true
+    },
+    "production-android": {
+      "extends": "production",
+      "android": {
+        "resourceClass": "medium"
+      }
+    },
+    "production-ios": {
+      "extends": "production",
+      "ios": {
+        "resourceClass": "medium"
+      }
     }
   },
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "YOUR_APPLE_APP_ID"
+        "ascAppId": "YOUR_APPLE_STORE_CONNECT_APP_ID",
+        "ascApiKeyPath": "/root/.config/apple/AuthKey_LCB69UH9WU.p8",
+        "ascApiKeyIssuerId": "4e694aa4-8cbc-4de4-bdf2-0ace72694564",
+        "ascApiKeyId": "LCB69UH9WU"
+      },
+      "android": {
+        "track": "production",
+        "releaseStatus": "draft"
       }
     }
   }

@@ -1,0 +1,41 @@
+#!/usr/bin/expect -f
+set timeout 300
+
+spawn eas credentials --platform ios
+
+# production-ios is 5th option = 4 arrow-down
+expect "Which build profile do you want to configure?"
+send -- "\x1b\x5bB"
+send -- "\x1b\x5bB"
+send -- "\x1b\x5bB"
+send -- "\x1b\x5bB"
+send -- "\r"
+
+# Individual = 3rd option = 2 arrow-down
+expect "Select your Apple Team Type:"
+send -- "\x1b\x5bB"
+send -- "\x1b\x5bB"
+send -- "\r"
+
+expect "Apple Team ID:"
+send -- "4G3G5MX9BH\r"
+
+# Build Credentials = 1st option = Enter
+expect "What do you want to do?"
+send -- "\r"
+
+# All = 1st option = Enter
+expect "What do you want to do?"
+send -- "\r"
+
+expect {
+    "Generate a new Apple Developer Program membership certificate" { send -- "\r" }
+    timeout { exp_continue }
+}
+
+expect {
+    "Generate a new Apple Developer Program provisioning profile" { send -- "\r" }
+    timeout { exp_continue }
+}
+
+expect eof

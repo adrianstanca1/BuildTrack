@@ -1,0 +1,101 @@
+#!/usr/bin/expect -f
+set timeout 300
+set apple_password "Cumparavinde1"
+
+# Spawn EAS credentials
+spawn eas credentials --platform ios
+
+expect {
+    "Which build profile" {
+        # production-ios is last option, navigate to it
+        send "\033\[B"
+        sleep 0.1
+        send "\033\[B"
+        sleep 0.1
+        send "\033\[B"
+        sleep 0.1
+        send "\033\[B"
+        sleep 0.1
+        send "\r"
+        exp_continue
+    }
+    "Select your Apple Team Type" {
+        # Individual is 3rd option
+        send "\033\[B"
+        sleep 0.1
+        send "\033\[B"
+        sleep 0.1
+        send "\r"
+        exp_continue
+    }
+    "Apple Team ID:" {
+        sleep 0.5
+        send "4G3G5MX9BH\r"
+        exp_continue
+    }
+    "Build Credentials: Manage everything" {
+        send "\r"
+        exp_continue
+    }
+    "All: Set up all" {
+        send "\r"
+        exp_continue
+    }
+    "Apple ID:" {
+        sleep 0.5
+        # Clear any pre-filled content first, then type Apple ID
+        send "\025"
+        sleep 0.1
+        send "adrian.stanca1@icloud.com\r"
+        exp_continue
+    }
+    -re "Password.*adrian.stanca1" {
+        sleep 0.5
+        send "$apple_password\r"
+        exp_continue
+    }
+    "Generate a new Apple Developer Program membership certificate" {
+        sleep 0.5
+        send "\r"
+        exp_continue
+    }
+    "Generate a new Apple Developer Program provisioning profile" {
+        sleep 0.5
+        send "\r"
+        exp_continue
+    }
+    "two-factor" {
+        puts "\n\n[2FA REQUIRED]"
+        puts "Please check your Apple device (iPhone/iPad/Mac) for a 6-digit verification code."
+        puts "Apple sent it to your trusted device."
+        puts "\nType the 6-digit code here and press Enter:"
+        interact
+    }
+    "verification code" {
+        puts "\n\n[2FA REQUIRED]"
+        puts "Please check your Apple device for a 6-digit verification code."
+        interact
+    }
+    "Press any key to continue" {
+        send "\r"
+        exp_continue
+    }
+    "Error" {
+        puts "\n\n[ERROR ENCOUNTERED]"
+        puts "Full error: $expect_out(buffer)"
+        exit 1
+    }
+    "locked" {
+        puts "\n\n[ACCOUNT LOCKED]"
+        puts "Your Apple account is still locked. Please visit https://iforgot.apple.com to unlock it."
+        exit 1
+    }
+    timeout {
+        puts "\n\n[TIMEOUT]"
+        exit 1
+    }
+    eof {
+        puts "\n\n[COMPLETED]"
+        exit 0
+    }
+}

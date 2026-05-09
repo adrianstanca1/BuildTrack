@@ -4,7 +4,8 @@ type StatusType =
   | 'active' | 'completed' | 'planning' | 'on-hold' | 'cancelled'
   | 'pending' | 'in-progress'
   | 'low' | 'medium' | 'high' | 'urgent'
-  | 'passed' | 'failed';
+  | 'passed' | 'failed'
+  | 'off-duty' | 'on-leave';
 
 interface StatusBadgeProps {
   status: StatusType;
@@ -24,6 +25,8 @@ const statusConfig: Record<StatusType, { bg: string; text: string; label: string
   urgent: { bg: 'bg-red-100 dark:bg-red-900', text: 'text-red-700 dark:text-red-300', label: 'Urgent' },
   passed: { bg: 'bg-green-100 dark:bg-green-900', text: 'text-green-700 dark:text-green-300', label: 'Passed' },
   failed: { bg: 'bg-red-100 dark:bg-red-900', text: 'text-red-700 dark:text-red-300', label: 'Failed' },
+  'off-duty': { bg: 'bg-gray-100 dark:bg-gray-900', text: 'text-gray-700 dark:text-gray-300', label: 'Off Duty' },
+  'on-leave': { bg: 'bg-yellow-100 dark:bg-yellow-900', text: 'text-yellow-700 dark:text-yellow-300', label: 'On Leave' },
 };
 
 export function StatusBadge({ status }: StatusBadgeProps) {
