@@ -30,17 +30,17 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Install Fastlane
-        run: gem install fastlane
-
-      - name: Submit to TestFlight via Fastlane
+      - name: Upload to TestFlight via altool
         run: |
-          fastlane pilot upload \
-            --ipa build-output/buildtrack.ipa \
-            --apple_id 6767887054 \
-            --app_identifier ro.stancainvest.buildtrack \
-            --username 'adrian.stanca1@icloud.com' \
-            --skip_waiting_for_build_processing true \
+          # Save API key for altool
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "${{ secrets.ASC_API_KEY }}" > ~/.appstoreconnect/private_keys/AuthKey_LX9G2X2H8A.p8
+          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_LX9G2X2H8A.p8
+          
+          # Upload using altool (built into macOS/Xcode)
+          xcrun altool --upload-app \
+            -f build-output/buildtrack.ipa \
+            -t ios \
+            --apiKey LX9G2X2H8A \
+            --apiIssuer 4e694aa4-8cbc-4de4-bdf2-0ace72694564 \
             --verbose
-        env:
-          FASTLANE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
