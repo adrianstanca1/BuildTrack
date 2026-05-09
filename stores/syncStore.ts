@@ -28,6 +28,7 @@ export interface SyncState {
   lastSyncTime: number | null;
   pendingCount: number;
   errorMessage: string | null;
+  lastSyncRelative: string;
 
   // Actions
   setStatus: (status: SyncStatus) => void;
@@ -69,6 +70,7 @@ export const useSyncStore = create<SyncState>()(
       lastSyncTime: null,
       pendingCount: 0,
       errorMessage: null,
+      lastSyncRelative: 'Never',
 
       setStatus: (status) => set({ status }),
       setOnline: (isOnline) => set({ isOnline }),
@@ -169,6 +171,7 @@ export const useSyncStore = create<SyncState>()(
           isOnline: online,
           pendingCount: pending,
           lastSyncTime: lastSync,
+          lastSyncRelative: formatRelativeTime(lastSync),
           status: online ? (pending > 0 ? 'syncing' : 'idle') : 'offline',
         });
       },
