@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, useColorScheme } from 'react-native';
 import Svg, { Path, Circle, Defs, LinearGradient, Stop, Text as SvgText, G } from 'react-native-svg';
 import { COLORS } from '@/constants/theme';
 
@@ -26,6 +26,10 @@ export function LineChart({
   fillArea = true,
   showPoints = true,
 }: LineChartProps) {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const c = isDark ? COLORS.dark : COLORS.light;
+
   if (data.length < 2) return null;
 
   const padding = { top: 20, right: 20, bottom: 30, left: 40 };
@@ -34,7 +38,7 @@ export function LineChart({
 
   const maxY = Math.max(...data.map((d) => d.y)) * 1.1;
   const minY = Math.min(...data.map((d) => d.y)) * 0.9;
-  const yRange = maxY - minY;
+  const yRange = maxY - minY || 1;
 
   const xScale = (i: number) => padding.left + (i / (data.length - 1)) * chartWidth;
   const yScale = (v: number) => padding.top + chartHeight - ((v - minY) / yRange) * chartHeight;
@@ -68,14 +72,14 @@ export function LineChart({
                 x={padding.left - 8}
                 y={y + 4}
                 fontSize={10}
-                fill={COLORS.light.textMuted}
+                fill={c.textMuted}
                 textAnchor="end"
               >
                 {Math.round(value)}
               </SvgText>
               <Path
                 d={`M ${padding.left} ${y} L ${width - padding.right} ${y}`}
-                stroke={COLORS.light.border}
+                stroke={c.border}
                 strokeWidth={0.5}
                 strokeDasharray="4 4"
               />
@@ -105,7 +109,7 @@ export function LineChart({
               cy={yScale(point.y)}
               r={5}
               fill={color}
-              stroke={COLORS.light.bg}
+              stroke={c.bg}
               strokeWidth={2}
             />
           ))}
@@ -117,7 +121,7 @@ export function LineChart({
             x={xScale(i)}
             y={height - 8}
             fontSize={10}
-            fill={COLORS.light.textMuted}
+            fill={c.textMuted}
             textAnchor="middle"
           >
             {point.label || String(i + 1)}
