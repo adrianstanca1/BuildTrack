@@ -27,13 +27,17 @@
         "NSPhotoLibraryUsageDescription": "BuildTrack needs photo library access to attach site photos to projects and safety reports.",
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDisplayName": "BuildTrack",
-        "CFBundleName": "BuildTrack"
+        "CFBundleName": "BuildTrack",
+        "NSUserNotificationUsageDescription": "BuildTrack sends you notifications about project updates, task assignments, and safety alerts."
       },
       "config": {
         "usesNonExemptEncryption": false
       },
       "associatedDomains": [
         "applinks:buildtrack.cortexbuildpro.com"
+      ],
+      "UIBackgroundModes": [
+        "remote-notification"
       ]
     },
     "android": {
@@ -73,6 +77,14 @@
     "plugins": [
       "expo-router",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#1a365d",
+          "sounds": []
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/splash.png",
@@ -81,6 +93,8 @@
         }
       ]
     ],
+    "appStoreUrl": "https://apps.apple.com/app/buildtrack",
+    "playStoreUrl": "https://play.google.com/store/apps/details?id=ro.stancainvest.buildtrack",
     "extra": {
       "eas": {
         "projectId": "cd4364ab-e24c-4973-96fe-6191e9b20b5d"
