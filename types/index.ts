@@ -19,7 +19,10 @@ export interface Project {
   startDate: string;
   endDate: string;
   teamSize: number;
+  latitude?: number;
+  longitude?: number;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Task {

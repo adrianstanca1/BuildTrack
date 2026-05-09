@@ -2,11 +2,13 @@
   "expo": {
     "name": "BuildTrack",
     "slug": "buildtrack",
-    "version": "1.0.0",
+    "scheme": "buildtrack",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "owner": "adrianstanca",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -17,16 +19,52 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.buildtrack.app",
-      "buildNumber": "1.0.0"
+      "bundleIdentifier": "ro.stancainvest.buildtrack",
+      "buildNumber": "1.1.0.1",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "BuildTrack needs your location to show nearby construction projects and sites.",
+        "NSCameraUsageDescription": "BuildTrack uses the camera to capture photos of sites and safety documentation.",
+        "NSPhotoLibraryUsageDescription": "BuildTrack needs photo library access to attach site photos to projects and safety reports.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDisplayName": "BuildTrack",
+        "CFBundleName": "BuildTrack"
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "associatedDomains": [
+        "applinks:buildtrack.cortexbuildpro.com"
+      ]
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1a365d"
       },
-      "package": "com.buildtrack.app",
-      "versionCode": 1
+      "package": "ro.stancainvest.buildtrack",
+      "versionCode": 2,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "buildtrack.cortexbuildpro.com",
+              "pathPrefix": "/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -43,6 +81,21 @@
         }
       ]
     ],
+    "extra": {
+      "eas": {
+        "projectId": "cd4364ab-e24c-4973-96fe-6191e9b20b5d"
+      },
+      "router": {}
+    },
+    "updates": {
+      "url": "https://u.expo.dev/cd4364ab-e24c-4973-96fe-6191e9b20b5d",
+      "enabled": true,
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "experiments": {
       "typedRoutes": true
     }

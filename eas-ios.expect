@@ -1,0 +1,95 @@
+#!/usr/bin/expect -f
+set timeout 300
+set apple_password "***REDACTED***"
+set team_id "4G3G5MX9BH"
+
+# Arrow down in expect
+set arrow_down "\033\[B"
+
+spawn eas credentials --platform ios
+
+expect {
+    "Which build profile" {
+        # Navigate to production-ios (5th option = 4 downs)
+        for {set i 0} {$i < 4} {incr i} {
+            send $arrow_down
+            sleep 0.2
+        }
+        send "\r"
+        exp_continue
+    }
+    "Select your Apple Team Type" {
+        # Navigate to Individual (3rd option = 2 downs)
+        for {set i 0} {$i < 2} {incr i} {
+            send $arrow_down
+            sleep 0.2
+        }
+        send "\r"
+        exp_continue
+    }
+    "Apple Team ID:" {
+        sleep 0.5
+        send "$team_id\r"
+        exp_continue
+    }
+    "Build Credentials: Manage everything" {
+        send "\r"
+        exp_continue
+    }
+    "All: Set up all the required credentials" {
+        send "\r"
+        exp_continue
+    }
+    "Apple ID:" {
+        sleep 0.5
+        send "adrian.stanca1@icloud.com\r"
+        exp_continue
+    }
+    -re "Password.*adrian.stanca1" {
+        sleep 0.5
+        send "$apple_password\r"
+        exp_continue
+    }
+    "Generate a new Apple Developer Program membership certificate" {
+        sleep 0.5
+        send "\r"
+        exp_continue
+    }
+    "Generate a new Apple Developer Program provisioning profile" {
+        sleep 0.5
+        send "\r"
+        exp_continue
+    }
+    "Press any key to continue" {
+        send "\r"
+        exp_continue
+    }
+    "two-factor" {
+        puts "\n[2FA REQUIRED] Please provide the 6-digit code from your Apple device"
+        interact
+    }
+    "verification code" {
+        puts "\n[2FA REQUIRED] Please provide the 6-digit code from your Apple device"
+        interact
+    }
+    "6-digit" {
+        puts "\n[2FA REQUIRED] Please provide the 6-digit code from your Apple device"
+        interact
+    }
+    "Error" {
+        puts "\n[ERROR]"
+        exit 1
+    }
+    "locked" {
+        puts "\n[ERROR] Account is locked"
+        exit 1
+    }
+    timeout {
+        puts "\n[TIMEOUT]"
+        exit 1
+    }
+    eof {
+        puts "\n[EOF]"
+        exit 0
+    }
+}

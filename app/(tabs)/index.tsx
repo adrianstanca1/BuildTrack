@@ -103,7 +103,7 @@ export default function DashboardScreen() {
         {recentProjects.map(project => (
           <Card key={project.id} className="mb-3">
             <Pressable 
-              onPress={() => router.push(`/projects/${project.id}`)}
+              onPress={() => router.push(`/(modals)/project-details?id=${project.id}` as any)}
               className="p-4"
             >
               <View className="flex-row justify-between items-start">

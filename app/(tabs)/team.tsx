@@ -30,7 +30,7 @@ export default function TeamScreen() {
             color={colors.primary}
           />
           <TeamStatCard 
-            icon="person-check" 
+            icon="checkmark-circle" 
             label="Active" 
             value={activeWorkers.length}
             color={colors.success}
@@ -49,12 +49,12 @@ export default function TeamScreen() {
         </Text>
 
         <View className="flex-row flex-wrap -mx-2 mb-6">
-          {Object.entries(roleBreakdown).map(([role, count]) => (
+          {Object.entries(roleBreakdown).map(([role, workers]) => (
             <View key={role} className="w-1/2 px-2 mb-3">
               <View className="bg-white dark:bg-gray-800 p-4 rounded-xl">
                 <View className="flex-row items-center">
                   <Ionicons name="briefcase" size={16} color={colors.primary} />
-                  <Text className="text-lg font-bold text-gray-900 dark:text-white ml-2">{count}</Text>
+                  <Text className="text-lg font-bold text-gray-900 dark:text-white ml-2">{workers.length}</Text>
                 </View>
                 <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1 capitalize">{role}</Text>
               </View>

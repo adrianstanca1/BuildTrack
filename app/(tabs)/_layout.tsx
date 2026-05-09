@@ -13,6 +13,7 @@ export default function TabLayout() {
         tabBarIcon: ({ focused, size }) => {
           const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
             index: focused ? 'home' : 'home-outline',
+            map: focused ? 'map' : 'map-outline',
             projects: focused ? 'construct' : 'construct-outline',
             tasks: focused ? 'list' : 'list-outline',
             safety: focused ? 'shield-checkmark' : 'shield-checkmark-outline',
@@ -30,6 +31,7 @@ export default function TabLayout() {
       })}
     >
       <Tabs.Screen name="index" options={{ title: 'Dashboard' }} />
+      <Tabs.Screen name="map" options={{ title: 'Map' }} />
       <Tabs.Screen name="projects" options={{ title: 'Projects' }} />
       <Tabs.Screen name="tasks" options={{ title: 'Tasks' }} />
       <Tabs.Screen name="safety" options={{ title: 'Safety' }} />

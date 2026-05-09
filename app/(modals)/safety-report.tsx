@@ -41,16 +41,21 @@ export default function SafetyReportModal() {
     };
 
     if (reportType === 'incident') {
+      const now = new Date().toISOString().split('T')[0];
       addIncident({
         ...baseData,
         severity,
+        date: now,
         injuries: parseInt(injuries) || 0,
         witnesses: witnesses.split(',').map(w => w.trim()).filter(Boolean),
+        reportedBy: 'Current User',
       });
     } else {
+      const now = new Date().toISOString().split('T')[0];
       addInspection({
         ...baseData,
         status: inspectionStatus,
+        date: now,
         inspector: inspector.trim() || 'Unassigned',
         findings: findings.split('\n').map(f => f.trim()).filter(Boolean),
       });

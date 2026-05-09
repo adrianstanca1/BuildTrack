@@ -16,7 +16,7 @@ export default function SafetyScreen() {
   const filteredItems = [
     ...incidents.map(i => ({ ...i, type: 'incident' as const })),
     ...inspections.map(i => ({ ...i, type: 'inspection' as const })),
-  ].filter(item => filter === 'all' || item.type === filter)
+  ].filter(item => filter === 'all' || (filter === 'incidents' ? item.type === 'incident' : item.type === 'inspection'))
    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (

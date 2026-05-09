@@ -1,185 +1,183 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
-export type TaskStatus = 'pending' | 'in-progress' | 'completed';
-
-export interface Task {
-  id: string;
-  title: string;
-  description: string;
-  projectId?: string;
-  projectName: string;
-  assignedTo: string;
-  priority: TaskPriority;
-  status: TaskStatus;
-  dueDate: string;
-  createdAt: string;
-  completedAt?: string;
-  isOverdue: boolean;
-}
+import { supabase } from '../lib/supabase';
+import type { Task } from '../types';
 
 interface TasksState {
   tasks: Task[];
-  addTask: (task: Partial<Task>) => void;
+  loading: boolean;
+  error: string | null;
+  
+  setTasks: (tasks: Task[]) => void;
+  addTask: (task: Task) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
-  updateTaskStatus: (id: string, status: TaskStatus) => void;
-  deleteTask: (id: string) => void;
-  getTasksByProject: (projectId: string) => Task[];
-  getTasksByAssignee: (name: string) => Task[];
-  getOverdueTasks: () => Task[];
+  removeTask: (id: string) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  
   getTodayTasks: () => Task[];
-  getUpcomingTasks: () => Task[];
+  getOverdueTasks: () => Task[];
+  getTasksByProject: (projectId: string) => Task[];
+  getTasksByStatus: (status: string) => Task[];
+  
+  fetchTasks: () => Promise<void>;
+  createTask: (task: Omit<Task, 'id' | 'createdAt'>) => Promise<Task | null>;
+  toggleTaskStatus: (id: string) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
 }
-
-const initialTasks: Task[] = [
-  {
-    id: 'task-1',
-    title: 'Pour foundation concrete',
-    description: 'Complete foundation slab pour for Building A, sections 1-4. Ensure temperature control during curing.',
-    projectId: 'proj-1',
-    projectName: 'Riverside Apartments',
-    assignedTo: 'Mike Johnson',
-    priority: 'high',
-    status: 'in-progress',
-    dueDate: '2026-05-10',
-    createdAt: '2026-05-01',
-    isOverdue: false,
-  },
-  {
-    id: 'task-2',
-    title: 'Install steel framework - Floor 5-10',
-    description: 'Erect structural steel columns and beams for floors 5 through 10. Coordinate crane schedule.',
-    projectId: 'proj-2',
-    projectName: 'Metro Office Tower',
-    assignedTo: 'Sarah Chen',
-    priority: 'urgent',
-    status: 'pending',
-    dueDate: '2026-05-12',
-    createdAt: '2026-05-03',
-    isOverdue: false,
-  },
-  {
-    id: 'task-3',
-    title: 'Complete HVAC ductwork',
-    description: 'Install remaining ductwork in basement and ground floor areas. Pressure test required.',
-    projectId: 'proj-3',
-    projectName: 'Community Center Renovation',
-    assignedTo: 'Tom Wilson',
-    priority: 'medium',
-    status: 'in-progress',
-    dueDate: '2026-05-08',
-    createdAt: '2026-05-02',
-    isOverdue: true,
-  },
-  {
-    id: 'task-4',
-    title: 'Electrical panel upgrade',
-    description: 'Replace main electrical panel and install new sub-panels for expanded capacity.',
-    projectId: 'proj-3',
-    projectName: 'Community Center Renovation',
-    assignedTo: 'Lisa Rodriguez',
-    priority: 'high',
-    status: 'pending',
-    dueDate: '2026-05-15',
-    createdAt: '2026-05-04',
-    isOverdue: false,
-  },
-  {
-    id: 'task-5',
-    title: 'Roof waterproofing inspection',
-    description: 'Conduct final inspection of waterproofing membrane on Building A rooftop before green roof installation.',
-    projectId: 'proj-1',
-    projectName: 'Riverside Apartments',
-    assignedTo: 'Mike Johnson',
-    priority: 'medium',
-    status: 'completed',
-    dueDate: '2026-05-05',
-    createdAt: '2026-04-28',
-    completedAt: '2026-05-04',
-    isOverdue: false,
-  },
-];
 
 export const useTasksStore = create<TasksState>()(
   persist(
     (set, get) => ({
-      tasks: initialTasks,
+      tasks: [],
+      loading: false,
+      error: null,
 
-      addTask: (taskData) => {
-        const dueDate = new Date(taskData.dueDate || new Date());
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const newTask: Task = {
-          id: `task-${Date.now()}`,
-          title: taskData.title || 'Untitled Task',
-          description: taskData.description || '',
-          projectId: taskData.projectId,
-          projectName: taskData.projectName || 'No Project',
-          assignedTo: taskData.assignedTo || 'Unassigned',
-          priority: taskData.priority || 'medium',
-          status: taskData.status || 'pending',
-          dueDate: taskData.dueDate || new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          isOverdue: dueDate < today && taskData.status !== 'completed',
-        };
-        set({ tasks: [...get().tasks, newTask] });
-      },
-
-      updateTask: (id, updates) => {
-        set({
-          tasks: get().tasks.map(t => {
-            if (t.id !== id) return t;
-            const updated = { ...t, ...updates };
-            const dueDate = new Date(updated.dueDate);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            updated.isOverdue = dueDate < today && updated.status !== 'completed';
-            return updated;
-          }),
-        });
-      },
-
-      updateTaskStatus: (id, status) => {
-        const updates: Partial<Task> = { status };
-        if (status === 'completed') {
-          updates.completedAt = new Date().toISOString();
-          updates.isOverdue = false;
-        }
-        get().updateTask(id, updates);
-      },
-
-      deleteTask: (id) => {
-        set({ tasks: get().tasks.filter(t => t.id !== id) });
-      },
-
-      getTasksByProject: (projectId) => {
-        return get().tasks.filter(t => t.projectId === projectId);
-      },
-
-      getTasksByAssignee: (name) => {
-        return get().tasks.filter(t => t.assignedTo === name);
-      },
-
-      getOverdueTasks: () => {
-        return get().tasks.filter(t => t.isOverdue);
-      },
+      setTasks: (tasks) => set({ tasks }),
+      addTask: (task) => set((state) => ({ tasks: [task, ...state.tasks] })),
+      updateTask: (id, updates) => set((state) => ({
+        tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+      })),
+      removeTask: (id) => set((state) => ({
+        tasks: state.tasks.filter((t) => t.id !== id),
+      })),
+      setLoading: (loading) => set({ loading }),
+      setError: (error) => set({ error }),
 
       getTodayTasks: () => {
         const today = new Date().toISOString().split('T')[0];
-        return get().tasks.filter(t => t.dueDate === today && t.status !== 'completed');
+        return get().tasks.filter((t) => t.dueDate === today);
+      },
+      getOverdueTasks: () => get().tasks.filter((t) => t.isOverdue && t.status !== 'completed'),
+      getTasksByProject: (projectId) => get().tasks.filter((t) => t.projectId === projectId),
+      getTasksByStatus: (status) => get().tasks.filter((t) => t.status === status),
+
+      fetchTasks: async () => {
+        set({ loading: true, error: null });
+        try {
+          const { data, error } = await supabase
+            .from('tasks')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (error) throw error;
+
+          const tasks = (data || []).map((item) => ({
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            projectId: item.project_id,
+            projectName: item.project_name,
+            assignedTo: item.assigned_to,
+            priority: item.priority,
+            status: item.status,
+            dueDate: item.due_date,
+            completedAt: item.completed_at,
+            isOverdue: item.is_overdue,
+            createdAt: item.created_at,
+          }));
+
+          set({ tasks, loading: false });
+        } catch (err) {
+          set({ error: err instanceof Error ? err.message : 'Failed to fetch tasks', loading: false });
+        }
       },
 
-      getUpcomingTasks: () => {
-        const today = new Date().toISOString().split('T')[0];
-        return get().tasks.filter(t => t.dueDate > today && t.status !== 'completed');
+      createTask: async (taskData) => {
+        set({ loading: true, error: null });
+        try {
+          const { data, error } = await supabase
+            .from('tasks')
+            .insert({
+              title: taskData.title,
+              description: taskData.description,
+              project_id: taskData.projectId,
+              project_name: taskData.projectName,
+              assigned_to: taskData.assignedTo,
+              priority: taskData.priority,
+              status: taskData.status,
+              due_date: taskData.dueDate,
+              is_overdue: taskData.isOverdue,
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+
+          const task: Task = {
+            id: data.id,
+            title: data.title,
+            description: data.description,
+            projectId: data.project_id,
+            projectName: data.project_name,
+            assignedTo: data.assigned_to,
+            priority: data.priority,
+            status: data.status,
+            dueDate: data.due_date,
+            completedAt: data.completed_at,
+            isOverdue: data.is_overdue,
+            createdAt: data.created_at,
+          };
+
+          set((state) => ({ tasks: [task, ...state.tasks], loading: false }));
+          return task;
+        } catch (err) {
+          set({ error: err instanceof Error ? err.message : 'Failed to create task', loading: false });
+          return null;
+        }
+      },
+
+      toggleTaskStatus: async (id) => {
+        const task = get().tasks.find((t) => t.id === id);
+        if (!task) return;
+
+        const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+        const updates: Partial<Task> = { status: newStatus };
+        
+        if (newStatus === 'completed') {
+          updates.completedAt = new Date().toISOString();
+        } else {
+          updates.completedAt = undefined;
+        }
+
+        set((state) => ({
+          tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+        }));
+
+        try {
+          const { error } = await supabase
+            .from('tasks')
+            .update({
+              status: newStatus,
+              completed_at: updates.completedAt,
+            })
+            .eq('id', id);
+
+          if (error) throw error;
+        } catch (err) {
+          // Revert on error
+          set((state) => ({
+            tasks: state.tasks.map((t) => (t.id === id ? { ...t, status: task.status, completedAt: task.completedAt } : t)),
+          }));
+        }
+      },
+
+      deleteTask: async (id) => {
+        set({ loading: true, error: null });
+        try {
+          const { error } = await supabase.from('tasks').delete().eq('id', id);
+          if (error) throw error;
+          set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id), loading: false }));
+        } catch (err) {
+          set({ error: err instanceof Error ? err.message : 'Failed to delete task', loading: false });
+        }
       },
     }),
     {
-      name: 'tasks-storage',
+      name: 'buildtrack-tasks',
       storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({ tasks: state.tasks }),
     }
   )
 );

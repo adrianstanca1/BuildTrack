@@ -2,7 +2,8 @@ import { View, Text, TextInput, Pressable, ScrollView, Alert } from 'react-nativ
 import { useState } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useTasksStore, Task, TaskPriority, TaskStatus } from '../../stores/tasksStore';
+import { useTasksStore } from '../../stores/tasksStore';
+import type { Task, TaskPriority, TaskStatus } from '../../types';
 import { useProjectsStore } from '../../stores/projectsStore';
 import { colors } from '../../constants/colors';
 
@@ -31,7 +32,7 @@ export default function TaskDetailsModal() {
 
     const selectedProject = projects.find(p => p.id === projectId);
 
-    const taskData = {
+    const taskData: Omit<Task, 'id' | 'createdAt'> = {
       title: title.trim(),
       description: description.trim(),
       projectId: projectId || undefined,
@@ -40,12 +41,14 @@ export default function TaskDetailsModal() {
       priority,
       status,
       dueDate,
+      completedAt: undefined,
+      isOverdue: false,
     };
 
     if (isEditing) {
-      updateTask(id as string, taskData);
+      updateTask(id as string, taskData as any);
     } else {
-      addTask(taskData);
+      addTask(taskData as any);
     }
 
     router.back();
