@@ -70,7 +70,10 @@
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "6767887054"
+        "ascAppId": "6767887054",
+        "ascApiKeyId": "LCB69UH9WU",
+        "ascApiKeyIssuerId": "4e694aa4-8cbc-4de4-bdf2-0ace72694564",
+        "ascApiKeyPath": "/root/.config/apple/AuthKey_LCB69UH9WU.p8"
       },
       "android": {
         "track": "production",
