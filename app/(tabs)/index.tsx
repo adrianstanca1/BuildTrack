@@ -1,13 +1,16 @@
-import React, { useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
 import { useNotifications } from '@/hooks/useNotifications';
-import { COLORS, SPACING, RADIUS } from '@/constants/theme';
-import { Building2, ClipboardList, AlertTriangle, Users, Bell, TrendingUp, ArrowRight } from 'lucide-react-native';
+import { useIncidents } from '@/hooks/useSafety';
+import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '@/constants/theme';
+import { Building2, ClipboardList, AlertTriangle, Users, Bell, TrendingUp, ArrowRight, ShieldAlert } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { BarChart } from '@/components/charts/BarChart';
+import { DonutChart } from '@/components/charts/DonutChart';
 
 function StatCard({ icon: Icon, label, value, color, onPress }: any) {
   return (
@@ -57,6 +60,10 @@ export default function DashboardScreen() {
   const { data: projects, isLoading: projectsLoading, refetch: refetchProjects } = useProjects();
   const { data: tasks, refetch: refetchTasks } = useTasks();
   const { data: notifications, refetch: refetchNotifications } = useNotifications();
+  const { data: incidents } = useIncidents();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const c = isDark ? COLORS.dark : COLORS.light;
 
   const onRefresh = useCallback(() => {
     refetchProjects();
@@ -68,6 +75,43 @@ export default function DashboardScreen() {
   const pendingTasks = tasks?.data?.filter((t: any) => t.status === 'pending')?.length || 0;
   const unreadNotifications = notifications?.data?.unreadCount || 0;
   const totalWorkers = projects?.data?.reduce((acc: number, p: any) => acc + (p.worker_count || 0), 0) || 0;
+
+  // Chart data
+  const projectProgressData = useMemo(() => {
+    return (projects?.data || [])
+      .slice(0, 5)
+      .map((p: any) => ({
+        label: p.name?.length > 10 ? p.name.slice(0, 10) + '...' : p.name || 'Untitled',
+        value: Math.round(p.progress || 0),
+        color: p.color || COLORS.primary[500],
+      }));
+  }, [projects]);
+
+  const taskStatusData = useMemo(() => {
+    const all = tasks?.data || [];
+    const completed = all.filter((t: any) => t.status === 'completed').length;
+    const inProgress = all.filter((t: any) => t.status === 'in-progress').length;
+    const pending = all.filter((t: any) => t.status === 'pending').length;
+    return [
+      { label: 'Completed', value: completed, color: COLORS.success },
+      { label: 'In Progress', value: inProgress, color: COLORS.info },
+      { label: 'Pending', value: pending, color: COLORS.warning },
+    ];
+  }, [tasks]);
+
+  const safetySeverityData = useMemo(() => {
+    const sevCounts: Record<string, number> = { low: 0, medium: 0, high: 0, critical: 0 };
+    incidents?.forEach((inc: any) => {
+      const sev = inc.severity || 'low';
+      sevCounts[sev] = (sevCounts[sev] || 0) + 1;
+    });
+    return [
+      { label: 'Low', value: sevCounts.low, color: COLORS.success },
+      { label: 'Medium', value: sevCounts.medium, color: COLORS.warning },
+      { label: 'High', value: sevCounts.high, color: '#f97316' },
+      { label: 'Critical', value: sevCounts.critical, color: COLORS.danger },
+    ];
+  }, [incidents]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.dark.background }} edges={['top']}>
@@ -127,6 +171,45 @@ export default function DashboardScreen() {
           )) || (
             <View style={{ backgroundColor: COLORS.dark.surface, borderRadius: RADIUS.lg, padding: SPACING.lg, alignItems: 'center' }}>
               <Text style={{ color: COLORS.dark.textMuted }}>No projects yet</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Charts */}
+        <View style={{ marginBottom: SPACING.lg }}>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.dark.text, marginBottom: SPACING.md }}>Analytics</Text>
+
+          {/* Project Progress Bar Chart */}
+          {projectProgressData.length > 0 && (
+            <View style={{ backgroundColor: COLORS.dark.surface, borderRadius: RADIUS.lg, padding: SPACING.md, marginBottom: SPACING.md }}>
+              <Text style={{ fontSize: TYPOGRAPHY.captionMedium.size, fontWeight: TYPOGRAPHY.captionMedium.weight, color: COLORS.dark.textSecondary, marginBottom: SPACING.sm }}>
+                Project Progress (%)
+              </Text>
+              <BarChart data={projectProgressData} height={160} barWidth={24} />
+            </View>
+          )}
+
+          {/* Task Status Donut */}
+          <View style={{ backgroundColor: COLORS.dark.surface, borderRadius: RADIUS.lg, padding: SPACING.md, marginBottom: SPACING.md }}>
+            <Text style={{ fontSize: TYPOGRAPHY.captionMedium.size, fontWeight: TYPOGRAPHY.captionMedium.weight, color: COLORS.dark.textSecondary, marginBottom: SPACING.sm }}>
+              Task Completion
+            </Text>
+            <DonutChart
+              data={taskStatusData}
+              size={180}
+              strokeWidth={18}
+              centerValue={`${tasks?.data?.length || 0}`}
+              centerLabel="Total Tasks"
+            />
+          </View>
+
+          {/* Safety Incidents Bar Chart */}
+          {incidents && incidents.length > 0 && (
+            <View style={{ backgroundColor: COLORS.dark.surface, borderRadius: RADIUS.lg, padding: SPACING.md }}>
+              <Text style={{ fontSize: TYPOGRAPHY.captionMedium.size, fontWeight: TYPOGRAPHY.captionMedium.weight, color: COLORS.dark.textSecondary, marginBottom: SPACING.sm }}>
+                Safety Incidents by Severity
+              </Text>
+              <BarChart data={safetySeverityData} height={120} barWidth={20} horizontal />
             </View>
           )}
         </View>
