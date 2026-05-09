@@ -66,9 +66,9 @@
     "production": {
       "ios": {
         "ascAppId": "6767887054",
-        "ascApiKeyId": "LCB69UH9WU",
+        "ascApiKeyId": "S7PSXPJ963",
         "ascApiKeyIssuerId": "4e694aa4-8cbc-4de4-bdf2-0ace72694564",
-        "ascApiKeyPath": "/root/.config/apple/AuthKey_LCB69UH9WU.p8"
+        "ascApiKeyPath": "/root/.config/apple-v2/AuthKey_S7PSXPJ963.p8"
       },
       "android": {
         "track": "production",
