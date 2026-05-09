@@ -47,17 +47,22 @@ export default function ProfileScreen() {
             { text: 'Cancel', style: 'cancel', onPress: () => setBioLoading(false) },
             {
               text: 'Enable',
-              onPress: async (password: string) => {
+              onPress: (password?: string) => {
                 if (!password || !user?.email) {
                   setBioLoading(false);
                   Alert.alert('Error', 'Password is required');
                   return;
                 }
-                const result = await enableBiometric(user.email, password);
-                setBioLoading(false);
-                if (!result.success) {
-                  Alert.alert('Error', result.error || 'Failed to enable biometric login');
-                }
+                setBioLoading(true);
+                enableBiometric(user.email, password).then((result) => {
+                  setBioLoading(false);
+                  if (!result.success) {
+                    Alert.alert('Error', result.error || 'Failed to enable biometric login');
+                  }
+                }).catch((e: Error) => {
+                  setBioLoading(false);
+                  Alert.alert('Error', e.message || 'Failed to enable biometric login');
+                });
               },
             },
           ],
