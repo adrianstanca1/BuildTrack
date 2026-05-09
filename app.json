@@ -95,6 +95,9 @@
     ],
     "appStoreUrl": "https://apps.apple.com/app/buildtrack",
     "playStoreUrl": "https://play.google.com/store/apps/details?id=ro.stancainvest.buildtrack",
+    "privacyPolicyUrl": "https://buildtrack.cortexbuildpro.com/privacy",
+    "supportUrl": "https://buildtrack.cortexbuildpro.com/support",
+    "marketingUrl": "https://buildtrack.cortexbuildpro.com",
     "extra": {
       "eas": {
         "projectId": "cd4364ab-e24c-4973-96fe-6191e9b20b5d"

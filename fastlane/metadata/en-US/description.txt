@@ -1,0 +1,27 @@
+BuildTrack is the all-in-one construction project management app for teams on the go. Plan projects, assign tasks, report safety incidents, conduct inspections, and manage your workforce — all from your phone or tablet.
+
+KEY FEATURES:
+• Project Tracking — Create and monitor construction projects with geolocation
+• Task Management — Assign, schedule, and track task completion
+• Safety Reports — Log incidents with photos, severity ratings, and follow-up actions
+• Inspections — Record site inspections with checklists and photo evidence
+• Team Management — Add workers, assign roles, and track participation
+• Interactive Map — View all your project sites on a live map
+• Real-time Sync — Data syncs across all devices instantly
+• Offline Mode — Continue working without internet; sync when back online
+• Dark Mode — Easy on the eyes for late-night site visits
+• Push Notifications — Stay informed about task updates and safety alerts
+
+WHY BUILDTRACK?
+Built for construction professionals who need reliable tools that work on-site, offline, and across teams. No spreadsheets, no paper trails — everything in one app.
+
+FREE WITH FULL ACCESS
+All features are available to every user at no cost.
+
+SUPPORT
+Email: support@cortexbuildpro.com
+Website: https://buildtrack.cortexbuildpro.com/support
+
+PRIVACY
+We respect your privacy. Read our full policy at:
+https://buildtrack.cortexbuildpro.com/privacy
