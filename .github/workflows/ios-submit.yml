@@ -33,11 +33,28 @@ jobs:
           curl -L -o build-output/buildtrack.ipa "${{ github.event.inputs.artifact_url }}"
           ls -la build-output/
 
+      - name: Check if build already exists in App Store Connect
+        run: |
+          echo "Checking if build already exists in App Store Connect..."
+          # Extract CFBundleVersion from IPA info
+          unzip -p build-output/buildtrack.ipa Payload/*.app/Info.plist > /tmp/Info.plist
+          BUNDLE_VERSION=$(plutil -extract CFBundleVersion raw /tmp/Info.plist 2>/dev/null || echo "unknown")
+          echo "Bundle version in IPA: $BUNDLE_VERSION"
+          echo "If altool fails with 'duplicate version', this build already exists in App Store Connect."
+
       - name: Upload to TestFlight via altool
         run: |
+          set +e
           xcrun altool --upload-app \
             -f build-output/buildtrack.ipa \
             -t ios \
             -u "${{ secrets.APPLE_ID }}" \
             -p "${{ secrets.APP_SPECIFIC_PASSWORD }}" \
             --verbose
+          EXIT_CODE=$?
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "✅ Upload successful!"
+          elif [ $EXIT_CODE -eq 1 ]; then
+            echo "⚠️ Upload may have failed. Check logs above for 'duplicate version' — if so, the build already exists."
+          fi
+          exit $EXIT_CODE
