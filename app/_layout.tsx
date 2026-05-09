@@ -75,6 +75,12 @@ export default function RootLayout() {
                 name="(modals)/safety-report"
                 options={{ presentation: 'modal' }}
               />
+              <Stack.Screen
+                name="(modals)/worker-details"
+                options={{ presentation: 'modal' }}
+              />
+              <Stack.Screen name="settings" />
+              <Stack.Screen name="admin" />
             </Stack>
           </AuthGuard>
         </AuthProvider>
