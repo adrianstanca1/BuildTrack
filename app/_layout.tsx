@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ONBOARDING_KEY } from '../constants/storage';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 
 SplashScreen.preventAutoHideAsync();
@@ -17,7 +18,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const [hasOnboarded, setHasOnboarded] = useState<boolean | null>(null);
 
   useEffect(() => {
-    AsyncStorage.getItem('hasCompletedOnboarding').then((value) => {
+    AsyncStorage.getItem(ONBOARDING_KEY).then((value) => {
       setHasOnboarded(!!value);
     });
   }, []);
@@ -29,7 +30,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     const inOnboarding = segments.length > 0 && String(segments[0] || '').startsWith('onboarding');
 
     if (!hasOnboarded && !inOnboarding && !inAuthGroup) {
-      router.replace('/onboarding/welcome' as any);
+      router.replace('/onboarding' as any);
     } else if (!user && !inAuthGroup && !inOnboarding) {
       router.replace('/auth/login' as any);
     } else if (user && inAuthGroup) {

@@ -16,7 +16,8 @@
       },
       "android": {
         "resourceClass": "medium"
-      }
+      },
+      "channel": "development"
     },
     "preview": {
       "distribution": "internal",
@@ -55,22 +56,24 @@
       "extends": "production",
       "android": {
         "resourceClass": "medium"
-      }
+      },
+      "channel": "production-android"
     },
     "production-ios": {
       "extends": "production",
       "ios": {
         "resourceClass": "medium"
-      }
+      },
+      "channel": "production-ios"
     }
   },
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "YOUR_APPLE_STORE_CONNECT_APP_ID",
-        "ascApiKeyPath": "/root/.config/apple/AuthKey_LCB69UH9WU.p8",
+        "ascAppId": "6738381975",
+        "ascApiKeyPath": "/root/.config/apple-new/AuthKey_LX9G2X2H8A.p8",
         "ascApiKeyIssuerId": "4e694aa4-8cbc-4de4-bdf2-0ace72694564",
-        "ascApiKeyId": "LCB69UH9WU"
+        "ascApiKeyId": "LX9G2X2H8A"
       },
       "android": {
         "track": "production",

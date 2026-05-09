@@ -150,7 +150,10 @@ export default function SettingsScreen() {
           label: 'Privacy Policy',
           color: colors.gray,
           type: 'button' as const,
-          onPress: () => Alert.alert('Coming Soon', 'Privacy policy will be available soon.'),
+          onPress: () => {
+            const url = 'https://buildtrack.cortexbuildpro.com/privacy';
+            Alert.alert('Privacy Policy', `View at:\n${url}\n\n(Replace with your actual privacy policy URL before App Store submission)`);
+          },
         },
         {
           icon: 'help-circle' as const,
