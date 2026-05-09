@@ -30,8 +30,46 @@ export default function ProfileScreen() {
   const isDark = colorScheme === 'dark';
   const c = isDark ? COLORS.dark : COLORS.light;
 
-  const { user, signOut, isBiometricAvailable, isBiometricEnabled, disableBiometric } = useAuth();
+  const { user, signOut, isBiometricAvailable, isBiometricEnabled, enableBiometric, disableBiometric } = useAuth();
   const [bioLoading, setBioLoading] = useState(false);
+
+  const handleBiometricToggle = async (val: boolean) => {
+    if (val) {
+      // Enable biometric - need password confirmation
+      setBioLoading(true);
+      try {
+        // Prompt for password to verify before storing credentials
+        // For now, we'll just enable it (user will need to re-login to store credentials)
+        Alert.prompt(
+          'Enable Biometric Login',
+          'Please enter your password to confirm',
+          [
+            { text: 'Cancel', style: 'cancel', onPress: () => setBioLoading(false) },
+            {
+              text: 'Enable',
+              onPress: async (password: string) => {
+                if (!password || !user?.email) {
+                  setBioLoading(false);
+                  Alert.alert('Error', 'Password is required');
+                  return;
+                }
+                const result = await enableBiometric(user.email, password);
+                setBioLoading(false);
+                if (!result.success) {
+                  Alert.alert('Error', result.error || 'Failed to enable biometric login');
+                }
+              },
+            },
+          ],
+          'secure-text'
+        );
+      } catch (e) {
+        setBioLoading(false);
+      }
+    } else {
+      await disableBiometric();
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -216,11 +254,8 @@ export default function ProfileScreen() {
             </View>
             <Switch
               value={isBiometricEnabled}
-              onValueChange={async (val) => {
-                if (!val) {
-                  await disableBiometric();
-                }
-              }}
+              onValueChange={handleBiometricToggle}
+              disabled={bioLoading}
               trackColor={{ false: c.border, true: COLORS.primary[500] }}
               thumbColor="#fff"
             />
