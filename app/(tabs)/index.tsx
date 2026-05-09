@@ -79,7 +79,7 @@ export default function DashboardScreen() {
         <View style={{ marginBottom: SPACING.lg }}>
           <Text style={{ fontSize: 13, color: COLORS.dark.textMuted, marginBottom: 2 }}>Welcome back,</Text>
           <Text style={{ fontSize: 24, fontWeight: '700', color: COLORS.dark.text }}>
-            {user?.firstName || user?.email?.split('@')[0] || 'User'}
+            {user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'User'}
           </Text>
         </View>
 
