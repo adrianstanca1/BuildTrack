@@ -114,7 +114,7 @@
       "policy": "appVersion"
     },
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": false
     }
   }
 }
