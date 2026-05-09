@@ -1,0 +1,119 @@
+name: Build and Submit iOS to TestFlight
+on:
+  workflow_dispatch:
+    inputs:
+      bump_build:
+        description: 'Bump build number before submitting'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  build-ios:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Bump Build Number
+        if: ${{ github.event.inputs.bump_build == 'true' }}
+        run: |
+          # Parse current build number and increment
+          CURRENT=$(cat app.json | grep -o '"buildNumber": "[^"]*"' | head -1 | cut -d'"' -f4)
+          echo "Current build: $CURRENT"
+          # Extract components (e.g., 1.1.0.1 -> 1.1.0.2)
+          BASE=$(echo $CURRENT | sed 's/\.[0-9]*$//')
+          LAST=$(echo $CURRENT | awk -F. '{print $NF}')
+          NEW="${BASE}.$((LAST + 1))"
+          echo "New build: $NEW"
+          sed -i "s/\"buildNumber\": \"$CURRENT\"/\"buildNumber\": \"$NEW\"/" app.json
+          cat app.json | grep buildNumber
+
+      - name: Build iOS on EAS
+        run: eas build --platform ios --profile production --non-interactive --no-wait
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+  submit-ios:
+    needs: build-ios
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Wait for Build and Download IPA
+        run: |
+          echo "Waiting for EAS build to complete..."
+          # Get the latest iOS build ID
+          BUILD_ID=$(eas build:list --platform ios --limit 1 --json 2>/dev/null | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4)
+          echo "Latest build ID: $BUILD_ID"
+
+          # Poll for completion (max 30 min)
+          for i in $(seq 1 60); do
+            STATUS=$(eas build:list --platform ios --limit 1 2>/dev/null | grep "Status" | awk '{print $2}')
+            echo "$(date +%H:%M:%S) Build status: $STATUS"
+            if [ "$STATUS" = "finished" ]; then
+              echo "Build complete!"
+              break
+            elif [ "$STATUS" = "errored" ]; then
+              echo "Build failed!"
+              exit 1
+            fi
+            sleep 30
+          done
+
+          # Download the IPA
+          eas build:download --platform ios --latest --output build-output/buildtrack.ipa
+          ls -la build-output/
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Upload to TestFlight via altool
+        run: |
+          xcrun altool --upload-app \
+            -f build-output/buildtrack.ipa \
+            -t ios \
+            -u "${{ secrets.APPLE_ID }}" \
+            -p "${{ secrets.APP_SPECIFIC_PASSWORD }}" \
+            --verbose
+
+      - name: Notify on Success
+        if: success()
+        run: echo "✅ Build submitted to TestFlight successfully!"
+
+      - name: Notify on Failure
+        if: failure()
+        run: echo "❌ Build or submission failed. Check logs above."
