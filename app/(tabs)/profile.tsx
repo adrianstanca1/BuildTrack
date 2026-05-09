@@ -1,26 +1,37 @@
-import { View, Text, ScrollView, Pressable, useColorScheme, Alert } from 'react-native';
+import { useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  useColorScheme,
+  Alert,
+  Switch,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
-import { useProjectsStore } from '../../stores/projectsStore';
-import { useTasksStore } from '../../stores/tasksStore';
-import { useTeamStore } from '../../stores/teamStore';
-import { useNotificationsStore } from '../../stores/notificationsStore';
-import { useSyncStore } from '../../stores/syncStore';
-import { colors } from '../../constants/colors';
+import { COLORS, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ONBOARDING_KEY } from '../../constants/storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+interface MenuItem {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value?: string;
+  color: string;
+  onPress?: () => void;
+}
 
 export default function ProfileScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { user, signOut } = useAuth();
-  const { projects } = useProjectsStore();
-  const { tasks } = useTasksStore();
-  const { workers } = useTeamStore();
-  const { unreadCount } = useNotificationsStore();
-  const { pendingCount, lastSyncRelative, isOnline } = useSyncStore();
+  const c = isDark ? COLORS.dark : COLORS.light;
+
+  const { user, signOut, isBiometricAvailable, isBiometricEnabled, disableBiometric } = useAuth();
+  const [bioLoading, setBioLoading] = useState(false);
 
   const handleLogout = () => {
     Alert.alert(
@@ -58,157 +69,301 @@ export default function ProfileScreen() {
     );
   };
 
-  const menuItems = [
-    {
-      icon: 'construct' as const,
-      label: 'My Projects',
-      value: projects.length.toString(),
-      color: colors.primary,
-      onPress: () => router.push('/projects'),
-    },
-    {
-      icon: 'list' as const,
-      label: 'My Tasks',
-      value: tasks.length.toString(),
-      color: colors.success,
-      onPress: () => router.push('/tasks'),
-    },
-    {
-      icon: 'people' as const,
-      label: 'Team Members',
-      value: workers.length.toString(),
-      color: colors.info,
-      onPress: () => router.push('/team'),
-    },
-    {
-      icon: 'notifications' as const,
-      label: 'Notifications',
-      value: unreadCount > 0 ? `${unreadCount} unread` : 'All caught up',
-      color: colors.warning,
-      onPress: () => router.push('/notifications'),
-    },
-    {
-      icon: 'settings' as const,
-      label: 'Settings',
-      value: '',
-      color: colors.gray,
-      onPress: () => router.push('/settings'),
-    },
-    {
-      icon: 'shield-checkmark' as const,
-      label: 'Admin Dashboard',
-      value: '',
-      color: '#7c3aed',
-      onPress: () => router.push('/(admin)' as any),
-    },
+  const overviewItems: MenuItem[] = [
+    { icon: 'construct-outline' as const, label: 'My Projects', value: '0', color: COLORS.primary[500], onPress: () => router.push('/(tabs)/projects') },
+    { icon: 'list-outline' as const, label: 'My Tasks', value: '0', color: '#22c55e', onPress: () => router.push('/(tabs)/tasks') },
+    { icon: 'people-outline' as const, label: 'Team Members', value: '0', color: '#3b82f6', onPress: () => router.push('/(tabs)/team') },
+    { icon: 'notifications-outline' as const, label: 'Notifications', value: '0 unread', color: '#f59e0b', onPress: () => router.push('/(tabs)/notifications') },
   ];
 
-  return (
-    <ScrollView className={`flex-1 ${isDark ? 'bg-zinc-950' : 'bg-gray-50'}`}>
-      {/* Header */}
-      <View className={`px-6 pt-14 pb-6 ${isDark ? 'bg-zinc-900' : 'bg-white'}`}>
-        <View className="items-center">
-          <View className="w-24 h-24 rounded-full bg-blue-600 items-center justify-center mb-4">
-            <Text className="text-3xl font-bold text-white">
-              {user?.email?.charAt(0).toUpperCase() || 'U'}
-            </Text>
-          </View>
-          <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            {user?.email?.split('@')[0] || 'User'}
-          </Text>
-          <Text className={`text-sm mt-1 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
-            {user?.email || 'Not signed in'}
-          </Text>
+  const securityItems: MenuItem[] = [
+    { icon: 'shield-checkmark-outline' as const, label: 'Admin Dashboard', color: '#7c3aed', onPress: () => router.push('/(admin)' as any) },
+    { icon: 'settings-outline' as const, label: 'Settings', color: '#6b7280', onPress: () => router.push('/settings') },
+  ];
+
+  const renderMenuItem = (item: MenuItem, index: number, total: number) => {
+    const isLast = index === total - 1;
+    return (
+      <Pressable
+        key={item.label}
+        onPress={item.onPress}
+        style={({ pressed }) => ({
+          flexDirection: 'row',
+          alignItems: 'center',
+          padding: 16,
+          opacity: pressed ? 0.7 : 1,
+          borderBottomWidth: isLast ? 0 : 1,
+          borderBottomColor: c.border,
+        })}
+      >
+        <View
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: RADIUS.md,
+            backgroundColor: item.color + '12',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: 14,
+          }}
+        >
+          <Ionicons name={item.icon} size={20} color={item.color} />
         </View>
 
-        {/* Sync Status */}
-        <View className="flex-row justify-center mt-4 space-x-4">
-          <View className="flex-row items-center">
-            <View className={`w-2 h-2 rounded-full mr-2 ${isOnline ? 'bg-green-500' : 'bg-red-500'}`} />
-            <Text className={`text-xs ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
-              {isOnline ? 'Online' : 'Offline'}
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: TYPOGRAPHY.body.size, fontWeight: TYPOGRAPHY.bodyMedium.weight, color: c.text }}>
+            {item.label}
+          </Text>
+          {item.value && (
+            <Text style={{ fontSize: TYPOGRAPHY.caption.size, color: c.textMuted, marginTop: 2 }}>
+              {item.value}
             </Text>
-          </View>
-          {pendingCount > 0 && (
-            <View className="flex-row items-center">
-              <Ionicons name="cloud-upload" size={12} color={colors.warning} />
-              <Text className="text-xs text-yellow-600 ml-1">{pendingCount} pending</Text>
-            </View>
           )}
-          <Text className={`text-xs ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
-            Last sync: {lastSyncRelative || 'Never'}
-          </Text>
         </View>
-      </View>
 
-      {/* Menu */}
-      <View className="px-4 mt-4">
-        {menuItems.map((item, index) => (
-          <Pressable
-            key={item.label}
-            onPress={item.onPress}
-            className={`flex-row items-center p-4 mb-2 rounded-xl ${
-              isDark ? 'bg-zinc-900' : 'bg-white'
-            }`}
+        <Ionicons name="chevron-forward" size={20} color={c.textMuted} />
+      </Pressable>
+    );
+  };
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header Card */}
+        <View
+          style={{
+            marginHorizontal: 16,
+            marginTop: 16,
+            marginBottom: 8,
+            backgroundColor: c.cardBg,
+            borderRadius: RADIUS.xl,
+            padding: 24,
+            borderWidth: 1,
+            borderColor: c.border,
+            ...SHADOWS.md,
+          }}
+        >
+          <View style={{ alignItems: 'center' }}>
+            <View
+              style={{
+                width: 88,
+                height: 88,
+                borderRadius: 44,
+                backgroundColor: COLORS.primary[600],
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 16,
+                ...SHADOWS.md,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: TYPOGRAPHY.h2.size,
+                  fontWeight: TYPOGRAPHY.h2.weight,
+                  color: 'white',
+                }}
+              >
+                {user?.email?.charAt(0).toUpperCase() || 'U'}
+              </Text>
+            </View>
+            <Text style={{ fontSize: TYPOGRAPHY.h3.size, fontWeight: TYPOGRAPHY.h3.weight, color: c.text }}>
+              {user?.email?.split('@')[0] || 'User'}
+            </Text>
+            <Text style={{ fontSize: TYPOGRAPHY.caption.size, color: c.textMuted, marginTop: 4 }}>
+              {user?.email || 'Not signed in'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Biometric Toggle */}
+        {isBiometricAvailable && (
+          <View
+            style={{
+              marginHorizontal: 16,
+              marginTop: 12,
+              backgroundColor: c.cardBg,
+              borderRadius: RADIUS.xl,
+              padding: 16,
+              borderWidth: 1,
+              borderColor: c.border,
+              flexDirection: 'row',
+              alignItems: 'center',
+            }}
           >
             <View
-              className="w-10 h-10 rounded-lg items-center justify-center mr-3"
-              style={{ backgroundColor: item.color + '15' }}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: RADIUS.md,
+                backgroundColor: '#8b5cf6' + '12',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 14,
+              }}
             >
-              <Ionicons name={item.icon} size={20} color={item.color} />
+              <Ionicons name="finger-print-outline" size={20} color="#8b5cf6" />
             </View>
-            <View className="flex-1">
-              <Text className={`text-base font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                {item.label}
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: TYPOGRAPHY.body.size, fontWeight: TYPOGRAPHY.bodyMedium.weight, color: c.text }}>
+                Biometric Login
               </Text>
-              {item.value ? (
-                <Text className={`text-xs ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>{item.value}</Text>
-              ) : null}
+              <Text style={{ fontSize: TYPOGRAPHY.caption.size, color: c.textMuted, marginTop: 2 }}>
+                {isBiometricEnabled ? 'Enabled' : 'Not enabled'}
+              </Text>
             </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={isDark ? '#52525b' : '#d1d5db'}
+            <Switch
+              value={isBiometricEnabled}
+              onValueChange={async (val) => {
+                if (!val) {
+                  await disableBiometric();
+                }
+              }}
+              trackColor={{ false: c.border, true: COLORS.primary[500] }}
+              thumbColor="#fff"
             />
+          </View>
+        )}
+
+        {/* Overview Section */}
+        <View style={{ marginHorizontal: 16, marginTop: 16 }}>
+          <Text
+            style={{
+              fontSize: TYPOGRAPHY.overline.size,
+              fontWeight: TYPOGRAPHY.overline.weight,
+              color: c.textMuted,
+              textTransform: 'uppercase',
+              letterSpacing: TYPOGRAPHY.overline.letterSpacing,
+              marginBottom: 8,
+              marginLeft: 4,
+            }}
+          >
+            Overview
+          </Text>
+          <View
+            style={{
+              backgroundColor: c.cardBg,
+              borderRadius: RADIUS.xl,
+              borderWidth: 1,
+              borderColor: c.border,
+              overflow: 'hidden',
+            }}
+          >
+            {overviewItems.map((item, i) => renderMenuItem(item, i, overviewItems.length))}
+          </View>
+        </View>
+
+        {/* Security Section */}
+        <View style={{ marginHorizontal: 16, marginTop: 16 }}>
+          <Text
+            style={{
+              fontSize: TYPOGRAPHY.overline.size,
+              fontWeight: TYPOGRAPHY.overline.weight,
+              color: c.textMuted,
+              textTransform: 'uppercase',
+              letterSpacing: TYPOGRAPHY.overline.letterSpacing,
+              marginBottom: 8,
+              marginLeft: 4,
+            }}
+          >
+            Security
+          </Text>
+          <View
+            style={{
+              backgroundColor: c.cardBg,
+              borderRadius: RADIUS.xl,
+              borderWidth: 1,
+              borderColor: c.border,
+              overflow: 'hidden',
+            }}
+          >
+            {securityItems.map((item, i) => renderMenuItem(item, i, securityItems.length))}
+          </View>
+        </View>
+
+        {/* Bottom Actions */}
+        <View style={{ marginHorizontal: 16, marginTop: 16 }}>
+          <Pressable
+            onPress={handleResetOnboarding}
+            style={({ pressed }) => ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              padding: 16,
+              borderRadius: RADIUS.xl,
+              backgroundColor: c.cardBg,
+              borderWidth: 1,
+              borderColor: c.border,
+              opacity: pressed ? 0.7 : 1,
+              marginBottom: 12,
+            })}
+          >
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: RADIUS.md,
+                backgroundColor: '#6b7280' + '12',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 14,
+              }}
+            >
+              <Ionicons name="refresh" size={20} color="#6b7280" />
+            </View>
+            <Text style={{ fontSize: TYPOGRAPHY.body.size, fontWeight: TYPOGRAPHY.bodyMedium.weight, color: c.text, flex: 1 }}>
+              Reset Onboarding
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color={c.textMuted} />
           </Pressable>
-        ))}
-      </View>
 
-      {/* Bottom Actions */}
-      <View className="px-4 mt-4 mb-8">
-        <Pressable
-          onPress={handleResetOnboarding}
-          className={`flex-row items-center p-4 mb-2 rounded-xl ${
-            isDark ? 'bg-zinc-900' : 'bg-white'
-          }`}
-        >
-          <View className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-zinc-800 items-center justify-center mr-3">
-            <Ionicons name="refresh" size={20} color={colors.gray} />
-          </View>
-          <Text className={`text-base font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Reset Onboarding
+          <Pressable
+            onPress={handleLogout}
+            style={({ pressed }) => ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              padding: 16,
+              borderRadius: RADIUS.xl,
+              backgroundColor: isDark ? 'rgba(239,68,68,0.1)' : '#fef2f2',
+              borderWidth: 1,
+              borderColor: isDark ? 'rgba(239,68,68,0.2)' : '#fecaca',
+              opacity: pressed ? 0.8 : 1,
+            })}
+          >
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: RADIUS.md,
+                backgroundColor: isDark ? 'rgba(239,68,68,0.15)' : '#fee2e2',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 14,
+              }}
+            >
+              <Ionicons name="log-out" size={20} color={COLORS.danger} />
+            </View>
+            <Text
+              style={{
+                fontSize: TYPOGRAPHY.body.size,
+                fontWeight: TYPOGRAPHY.bodyMedium.weight,
+                color: COLORS.danger,
+                flex: 1,
+              }}
+            >
+              Sign Out
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* Version */}
+        <View style={{ alignItems: 'center', marginTop: 24 }}>
+          <Text style={{ fontSize: 12, color: c.textMuted }}>
+            BuildTrack v1.1.0
           </Text>
-        </Pressable>
-
-        <Pressable
-          onPress={handleLogout}
-          className="flex-row items-center p-4 rounded-xl bg-red-50 dark:bg-red-900/20"
-        >
-          <View className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 items-center justify-center mr-3">
-            <Ionicons name="log-out" size={20} color={colors.danger} />
-          </View>
-          <Text className="text-base font-medium text-red-600 dark:text-red-400">
-            Sign Out
-          </Text>
-        </Pressable>
-      </View>
-
-      {/* Version */}
-      <View className="items-center pb-8">
-        <Text className={`text-xs ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
-          BuildTrack v1.1.0
-        </Text>
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

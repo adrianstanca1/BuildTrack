@@ -1,58 +1,210 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import type { Session, User } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as LocalAuthentication from 'expo-local-authentication';
+import type { Session, User, Provider } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
+  isBiometricAvailable: boolean;
+  isBiometricEnabled: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  signInWithProvider: (provider: Provider) => Promise<void>;
+  signInWithBiometric: () => Promise<{ success: boolean; error?: string }>;
+  enableBiometric: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  disableBiometric: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const BIOMETRIC_ENABLED_KEY = '@buildtrack/biometric_enabled';
+const BIOMETRIC_EMAIL_KEY = '@buildtrack/biometric_email';
+const BIOMETRIC_PASSWORD_KEY = '@buildtrack/biometric_password';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
+  const [isBiometricEnabled, setIsBiometricEnabled] = useState(false);
 
+  // Check biometric availability
   useEffect(() => {
-    // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
+    const checkBiometric = async () => {
+      try {
+        const compatible = await LocalAuthentication.hasHardwareAsync();
+        const enrolled = await LocalAuthentication.isEnrolledAsync();
+        setIsBiometricAvailable(compatible && enrolled);
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+        const enabled = await AsyncStorage.getItem(BIOMETRIC_ENABLED_KEY);
+        setIsBiometricEnabled(enabled === 'true');
+      } catch {
+        setIsBiometricAvailable(false);
+        setIsBiometricEnabled(false);
+      }
+    };
+    checkBiometric();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  // Listen for auth state
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+      setSession(session);
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      setSession(session);
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
-  };
+  }, []);
 
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
+  const signUp = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: 'buildtrack://auth/callback',
+      },
+    });
     if (error) throw error;
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
-  };
+    // Don't clear biometric credentials on sign out - user might want to use them again
+  }, []);
+
+  const signInWithProvider = useCallback(async (provider: Provider) => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: 'buildtrack://auth/callback',
+      },
+    });
+    if (error) throw error;
+  }, []);
+
+  const signInWithBiometric = useCallback(async () => {
+    try {
+      const enabled = await AsyncStorage.getItem(BIOMETRIC_ENABLED_KEY);
+      if (enabled !== 'true') {
+        return { success: false, error: 'Biometric login not enabled' };
+      }
+
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Authenticate to sign in',
+        fallbackLabel: 'Use password',
+        cancelLabel: 'Cancel',
+        disableDeviceFallback: false,
+      });
+
+      if (!result.success) {
+        return { success: false, error: result.error || 'Authentication failed' };
+      }
+
+      const [email, password] = await Promise.all([
+        AsyncStorage.getItem(BIOMETRIC_EMAIL_KEY),
+        AsyncStorage.getItem(BIOMETRIC_PASSWORD_KEY),
+      ]);
+
+      if (!email || !password) {
+        return { success: false, error: 'No saved credentials found' };
+      }
+
+      await signIn(email, password);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Biometric authentication failed' };
+    }
+  }, [signIn]);
+
+  const enableBiometric = useCallback(async (email: string, password: string) => {
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Enable biometric login',
+        fallbackLabel: 'Use password',
+      });
+
+      if (!result.success) {
+        return { success: false, error: result.error || 'Authentication failed' };
+      }
+
+      await Promise.all([
+        AsyncStorage.setItem(BIOMETRIC_ENABLED_KEY, 'true'),
+        AsyncStorage.setItem(BIOMETRIC_EMAIL_KEY, email),
+        AsyncStorage.setItem(BIOMETRIC_PASSWORD_KEY, password),
+      ]);
+
+      setIsBiometricEnabled(true);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Failed to enable biometric login' };
+    }
+  }, []);
+
+  const disableBiometric = useCallback(async () => {
+    await Promise.all([
+      AsyncStorage.removeItem(BIOMETRIC_ENABLED_KEY),
+      AsyncStorage.removeItem(BIOMETRIC_EMAIL_KEY),
+      AsyncStorage.removeItem(BIOMETRIC_PASSWORD_KEY),
+    ]);
+    setIsBiometricEnabled(false);
+  }, []);
+
+  const resetPassword = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'buildtrack://auth/reset-password',
+    });
+    if (error) throw error;
+  }, []);
+
+  const updatePassword = useCallback(async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, signIn, signUp, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        isLoading,
+        isBiometricAvailable,
+        isBiometricEnabled,
+        signIn,
+        signUp,
+        signOut,
+        signInWithProvider,
+        signInWithBiometric,
+        enableBiometric,
+        disableBiometric,
+        resetPassword,
+        updatePassword,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
