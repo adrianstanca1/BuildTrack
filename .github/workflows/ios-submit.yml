@@ -23,9 +23,24 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Submit to TestFlight
-        working-directory: ./
+      - name: Download Build from EAS
         run: |
-          eas submit --platform ios --id ${{ github.event.inputs.build_id }} --non-interactive
+          mkdir -p build-output
+          eas build:download --id ${{ github.event.inputs.build_id }} --output build-output/buildtrack.ipa --platform ios
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install Fastlane
+        run: gem install fastlane
+
+      - name: Submit to TestFlight via Fastlane
+        run: |
+          fastlane pilot upload \
+            --ipa build-output/buildtrack.ipa \
+            --apple_id 6767887054 \
+            --app_identifier ro.stancainvest.buildtrack \
+            --username 'adrian.stanca1@icloud.com' \
+            --skip_waiting_for_build_processing true \
+            --verbose
+        env:
+          FASTLANE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
