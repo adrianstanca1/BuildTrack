@@ -1,0 +1,31 @@
+name: Submit iOS to TestFlight
+on:
+  workflow_dispatch:
+    inputs:
+      build_id:
+        description: 'EAS Build ID to submit'
+        required: true
+        default: '917aecf1-608f-4bb5-b241-7099324b8468'
+
+jobs:
+  submit-ios:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Submit to TestFlight
+        working-directory: ./
+        run: |
+          eas submit --platform ios --id ${{ github.event.inputs.build_id }} --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
