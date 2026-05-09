@@ -42,15 +42,10 @@
         "EXPO_PUBLIC_SUPABASE_URL": "https://buildtrack.cortexbuildpro.com",
         "EXPO_PUBLIC_API_URL": "https://buildtrack.cortexbuildpro.com/api"
       },
-      "android": {
-        "buildType": "app-bundle",
-        "resourceClass": "medium"
-      },
       "ios": {
         "resourceClass": "medium"
       },
-      "channel": "production",
-      "autoIncrement": true
+      "channel": "production"
     },
     "production-android": {
       "extends": "production",
