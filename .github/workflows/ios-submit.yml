@@ -6,6 +6,10 @@ on:
         description: 'EAS Build ID to submit'
         required: true
         default: '917aecf1-608f-4bb5-b241-7099324b8468'
+      artifact_url:
+        description: 'Direct artifact URL (optional - will auto-resolve if empty)'
+        required: false
+        default: 'https://expo.dev/artifacts/eas/iXWBYSfgFHno6EeR9iUpCm.ipa'
 
 jobs:
   submit-ios:
@@ -14,30 +18,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install EAS CLI
-        run: npm install -g eas-cli
-
-      - name: Download Build from EAS
+      - name: Download IPA
         run: |
           mkdir -p build-output
-          eas build:download --id ${{ github.event.inputs.build_id }} --output build-output/buildtrack.ipa --platform ios
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          curl -L -o build-output/buildtrack.ipa "${{ github.event.inputs.artifact_url }}"
+          ls -la build-output/
 
       - name: Upload to TestFlight via altool
         run: |
-          # Save API key for altool
           mkdir -p ~/.appstoreconnect/private_keys
           echo "${{ secrets.ASC_API_KEY }}" > ~/.appstoreconnect/private_keys/AuthKey_LX9G2X2H8A.p8
           chmod 600 ~/.appstoreconnect/private_keys/AuthKey_LX9G2X2H8A.p8
           
-          # Upload using altool (built into macOS/Xcode)
           xcrun altool --upload-app \
             -f build-output/buildtrack.ipa \
             -t ios \
