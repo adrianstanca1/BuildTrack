@@ -62,7 +62,7 @@ export default function ReportIncidentScreen() {
 
   const labelStyle = {
     fontSize: TYPOGRAPHY.caption.fontSize,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: COLORS.dark.textMuted,
     marginBottom: SPACING.xs,
     marginTop: SPACING.md,
