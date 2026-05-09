@@ -1,174 +1,66 @@
 // ============================================================================
-// BuildTrack Billing Store — Local/Stripe-free version
+// BuildTrack Admin Store — Simplified (no subscriptions, no tiers)
 // ============================================================================
+// All users are free with full access. Only role-based admin features remain.
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 
-export type SubscriptionTier = 'free' | 'pro' | 'enterprise';
-export type SubscriptionStatus = 'active' | 'inactive' | 'past_due' | 'cancelled' | 'trialing';
 export type UserRole = 'user' | 'admin' | 'super_admin';
-
-export interface TierLimits {
-  tier: SubscriptionTier;
-  max_projects: number;
-  max_team_members: number;
-  max_storage_gb: number;
-  has_advanced_reports: boolean;
-  has_audit_logs: boolean;
-  has_priority_support: boolean;
-  price_monthly_gbp: number;
-}
-
-export interface Subscription {
-  id: string;
-  user_id: string;
-  stripe_subscription_id: string | null;
-  stripe_customer_id: string | null;
-  tier: SubscriptionTier;
-  status: SubscriptionStatus;
-  current_period_start: string | null;
-  current_period_end: string | null;
-  cancel_at_period_end: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface BillingEvent {
-  id: string;
-  user_id: string | null;
-  stripe_event_id: string;
-  event_type: string;
-  payload: Record<string, unknown>;
-  processed_at: string;
-  created_at: string;
-}
 
 export interface UserProfile {
   id: string;
   email?: string;
+  full_name?: string;
   role: UserRole;
-  stripe_customer_id: string | null;
-  subscription_tier: SubscriptionTier;
-  subscription_status: SubscriptionStatus;
   created_at: string;
   updated_at: string;
 }
 
-interface BillingState {
-  subscription: Subscription | null;
-  limits: TierLimits | null;
-  usage: {
-    projects: number;
-    teamMembers: number;
-    storageBytes: number;
-  };
+interface AdminState {
   isAdmin: boolean;
   adminStats: {
     total_users: number;
-    active_users: number;
     total_projects: number;
     active_projects: number;
     total_tasks: number;
     completed_tasks: number;
     total_incidents: number;
     total_workers: number;
-    revenue_mrr: number;
   } | null;
   allUsers: UserProfile[];
-  allSubscriptions: Subscription[];
   loading: boolean;
   error: string | null;
 
-  setSubscription: (sub: Subscription | null) => void;
-  setLimits: (limits: TierLimits | null) => void;
-  setUsage: (usage: Partial<BillingState['usage']>) => void;
   setIsAdmin: (isAdmin: boolean) => void;
-  setAdminStats: (stats: BillingState['adminStats']) => void;
+  setAdminStats: (stats: AdminState['adminStats']) => void;
   setAllUsers: (users: UserProfile[]) => void;
-  setAllSubscriptions: (subs: Subscription[]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 
-  fetchSubscription: () => Promise<void>;
   fetchAdminStats: () => Promise<void>;
   fetchAllUsers: () => Promise<void>;
-  fetchUsage: () => Promise<void>;
   checkAdminRole: () => Promise<boolean>;
-  refreshBilling: () => Promise<void>;
-  upgradeUserTier: (userId: string, tier: SubscriptionTier) => Promise<void>;
+  refreshAdmin: () => Promise<void>;
+  setUserRole: (userId: string, role: UserRole) => Promise<void>;
 }
 
-export const useBillingStore = create<BillingState>()(
+export const useAdminStore = create<AdminState>()(
   persist(
     (set, get) => ({
-      subscription: null,
-      limits: null,
-      usage: { projects: 0, teamMembers: 0, storageBytes: 0 },
       isAdmin: false,
       adminStats: null,
       allUsers: [],
-      allSubscriptions: [],
       loading: false,
       error: null,
 
-      setSubscription: (subscription) => set({ subscription }),
-      setLimits: (limits) => set({ limits }),
-      setUsage: (usage) => set((state) => ({ usage: { ...state.usage, ...usage } })),
       setIsAdmin: (isAdmin) => set({ isAdmin }),
       setAdminStats: (adminStats) => set({ adminStats }),
       setAllUsers: (allUsers) => set({ allUsers }),
-      setAllSubscriptions: (allSubscriptions) => set({ allSubscriptions }),
       setLoading: (loading) => set({ loading }),
       setError: (error) => set({ error }),
-
-      fetchSubscription: async () => {
-        set({ loading: true, error: null });
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) throw new Error('Not authenticated');
-
-          const { data, error } = await supabase.rpc('get_user_subscription', {
-            user_uuid: user.id,
-          });
-
-          if (error) throw error;
-
-          const payload = data as {
-            subscription?: Record<string, unknown>;
-            limits?: Record<string, unknown>;
-          } | null;
-
-          if (payload?.subscription && payload.subscription.id) {
-            set({
-              subscription: payload.subscription as unknown as Subscription,
-              limits: payload.limits as unknown as TierLimits,
-              loading: false,
-            });
-          } else {
-            const { data: tierData, error: tierError } = await supabase
-              .from('tier_limits')
-              .select('*')
-              .eq('tier', 'free')
-              .single();
-
-            if (tierError) throw tierError;
-
-            set({
-              subscription: null,
-              limits: tierData as unknown as TierLimits,
-              loading: false,
-            });
-          }
-        } catch (err) {
-          set({
-            error: err instanceof Error ? err.message : 'Failed to fetch subscription',
-            loading: false,
-          });
-        }
-      },
 
       fetchAdminStats: async () => {
         if (!get().isAdmin) return;
@@ -176,7 +68,12 @@ export const useBillingStore = create<BillingState>()(
         try {
           const { data, error } = await supabase.rpc('get_admin_stats');
           if (error) throw error;
-          set({ adminStats: data as unknown as BillingState['adminStats'], loading: false });
+          // revenue_mrr removed from schema — strip it
+          const stats = data as Record<string, number> | null;
+          if (stats) {
+            delete stats.revenue_mrr;
+          }
+          set({ adminStats: stats as unknown as AdminState['adminStats'], loading: false });
         } catch (err) {
           set({
             error: err instanceof Error ? err.message : 'Failed to fetch admin stats',
@@ -191,39 +88,16 @@ export const useBillingStore = create<BillingState>()(
         try {
           const { data, error } = await supabase
             .from('profiles')
-            .select('id, email, role, stripe_customer_id, subscription_tier, subscription_status, created_at, updated_at')
+            .select('id, email, full_name, role, created_at, updated_at')
             .order('created_at', { ascending: false });
 
           if (error) throw error;
-
           set({ allUsers: (data || []) as unknown as UserProfile[], loading: false });
         } catch (err) {
           set({
             error: err instanceof Error ? err.message : 'Failed to fetch users',
             loading: false,
           });
-        }
-      },
-
-      fetchUsage: async () => {
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) return;
-
-          const [projectsRes, workersRes] = await Promise.all([
-            supabase.from('projects').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-            supabase.from('workers').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-          ]);
-
-          set({
-            usage: {
-              projects: projectsRes.count || 0,
-              teamMembers: workersRes.count || 0,
-              storageBytes: get().usage.storageBytes,
-            },
-          });
-        } catch {
-          // Silent fail
         }
       },
 
@@ -255,9 +129,7 @@ export const useBillingStore = create<BillingState>()(
         }
       },
 
-      refreshBilling: async () => {
-        await get().fetchSubscription();
-        await get().fetchUsage();
+      refreshAdmin: async () => {
         const isAdmin = await get().checkAdminRole();
         if (isAdmin) {
           await get().fetchAdminStats();
@@ -265,8 +137,7 @@ export const useBillingStore = create<BillingState>()(
         }
       },
 
-      // Local admin-managed tier upgrade (no Stripe)
-      upgradeUserTier: async (userId: string, tier: SubscriptionTier) => {
+      setUserRole: async (userId: string, role: UserRole) => {
         set({ loading: true, error: null });
         try {
           const { data: { user } } = await supabase.auth.getUser();
@@ -282,48 +153,17 @@ export const useBillingStore = create<BillingState>()(
             throw new Error('Admin privileges required');
           }
 
-          // Update profile
-          const { error: profileError } = await supabase
+          const { error } = await supabase
             .from('profiles')
-            .update({ subscription_tier: tier, subscription_status: 'active' })
+            .update({ role })
             .eq('id', userId);
 
-          if (profileError) throw profileError;
-
-          // Upsert subscription
-          const { data: existing } = await supabase
-            .from('subscriptions')
-            .select('id')
-            .eq('user_id', userId)
-            .maybeSingle();
-
-          const oneYear = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
-
-          if (existing) {
-            const { error } = await supabase
-              .from('subscriptions')
-              .update({ tier, status: 'active', updated_at: new Date().toISOString(), current_period_end: oneYear })
-              .eq('id', existing.id);
-            if (error) throw error;
-          } else {
-            const { error } = await supabase
-              .from('subscriptions')
-              .insert({
-                user_id: userId,
-                tier,
-                status: 'active',
-                current_period_start: new Date().toISOString(),
-                current_period_end: oneYear,
-              });
-            if (error) throw error;
-          }
-
-          // Refresh admin data
+          if (error) throw error;
           await get().fetchAllUsers();
           set({ loading: false });
         } catch (err) {
           set({
-            error: err instanceof Error ? err.message : 'Failed to upgrade user',
+            error: err instanceof Error ? err.message : 'Failed to set role',
             loading: false,
           });
           throw err;
@@ -331,14 +171,14 @@ export const useBillingStore = create<BillingState>()(
       },
     }),
     {
-      name: 'buildtrack-billing',
+      name: 'buildtrack-admin',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
-        subscription: state.subscription,
-        limits: state.limits,
-        usage: state.usage,
         isAdmin: state.isAdmin,
       }),
     }
   )
 );
+
+// Backward compatibility alias — removed subscription system
+export const useBillingStore = useAdminStore;
