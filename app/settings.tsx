@@ -1,8 +1,10 @@
-import { View, Text, TextInput, ScrollView, Pressable, useColorScheme, Switch, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, useColorScheme, Switch, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../contexts/AuthContext';
+import { COLORS, RADIUS, TYPOGRAPHY } from '../constants/theme';
 import { colors } from '../constants/colors';
 
 export default function SettingsScreen() {
