@@ -8,6 +8,7 @@ import {
   PanResponder,
   Dimensions,
   TouchableWithoutFeedback,
+  StyleSheet,
 } from 'react-native';
 import { useColorScheme } from 'react-native';
 import { COLORS, RADIUS, TYPOGRAPHY } from '../../constants/theme';
@@ -131,5 +132,3 @@ export function BottomSheet({ visible, onClose, title, children, snapPoints = ['
     </Modal>
   );
 }
-
-import { StyleSheet } from 'react-native';
