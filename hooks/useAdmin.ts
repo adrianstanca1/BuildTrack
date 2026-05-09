@@ -1,16 +1,15 @@
-import { useEffect, useState } from 'react';
-import { useBillingStore } from '../stores/billingStore';
+import { useEffect } from 'react';
+import { useAdminStore } from '../stores/billingStore';
 
 export function useAdmin() {
-  const isAdmin = useBillingStore((s) => s.isAdmin);
-  const adminStats = useBillingStore((s) => s.adminStats);
-  const allUsers = useBillingStore((s) => s.allUsers);
-  const allSubscriptions = useBillingStore((s) => s.allSubscriptions);
-  const loading = useBillingStore((s) => s.loading);
-  const error = useBillingStore((s) => s.error);
-  const checkAdminRole = useBillingStore((s) => s.checkAdminRole);
-  const fetchAdminStats = useBillingStore((s) => s.fetchAdminStats);
-  const fetchAllUsers = useBillingStore((s) => s.fetchAllUsers);
+  const isAdmin = useAdminStore((s) => s.isAdmin);
+  const adminStats = useAdminStore((s) => s.adminStats);
+  const allUsers = useAdminStore((s) => s.allUsers);
+  const loading = useAdminStore((s) => s.loading);
+  const error = useAdminStore((s) => s.error);
+  const checkAdminRole = useAdminStore((s) => s.checkAdminRole);
+  const fetchAdminStats = useAdminStore((s) => s.fetchAdminStats);
+  const fetchAllUsers = useAdminStore((s) => s.fetchAllUsers);
 
   useEffect(() => {
     checkAdminRole().then((admin) => {
@@ -25,7 +24,6 @@ export function useAdmin() {
     isAdmin,
     adminStats,
     allUsers,
-    allSubscriptions,
     loading,
     error,
     refresh: async () => {

@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import { View, Text, ScrollView, Pressable, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAdmin } from '../../hooks/useAdmin';
 import { AdminSidebar } from '../../components/admin/AdminSidebar';
 import { AdminStatCard } from '../../components/admin/AdminStatCard';
@@ -24,14 +24,12 @@ export default function AdminDashboardScreen() {
 
   const stats = adminStats || {
     total_users: 0,
-    active_users: 0,
     total_projects: 0,
     active_projects: 0,
     total_tasks: 0,
     completed_tasks: 0,
     total_incidents: 0,
     total_workers: 0,
-    revenue_mrr: 0,
   };
 
   return (
@@ -66,58 +64,26 @@ function AdminContent({
         Admin Dashboard
       </Text>
 
-      {loading && (
-        <Text className="text-gray-500">Loading stats...</Text>
-      )}
+      {loading && <Text className="text-gray-500">Loading stats...</Text>}
 
       <View className="flex-row flex-wrap -mx-2 mb-6">
         <View className="w-1/2 px-2 mb-3">
-          <AdminStatCard
-            icon="people"
-            label="Total Users"
-            value={stats.total_users}
-            color={colors.primary}
-          />
+          <AdminStatCard icon="people" label="Total Users" value={stats.total_users} color={colors.primary} />
         </View>
         <View className="w-1/2 px-2 mb-3">
-          <AdminStatCard
-            icon="checkmark-circle"
-            label="Active Subs"
-            value={stats.active_users}
-            color={colors.success}
-          />
+          <AdminStatCard icon="construct" label="Active Projects" value={stats.active_projects} color={colors.info} />
         </View>
         <View className="w-1/2 px-2 mb-3">
-          <AdminStatCard
-            icon="construct"
-            label="Active Projects"
-            value={stats.active_projects}
-            color={colors.info}
-          />
+          <AdminStatCard icon="list" label="Tasks Done" value={stats.completed_tasks} color={colors.warning} />
         </View>
         <View className="w-1/2 px-2 mb-3">
-          <AdminStatCard
-            icon="list"
-            label="Tasks Done"
-            value={stats.completed_tasks}
-            color={colors.warning}
-          />
+          <AdminStatCard icon="warning" label="Incidents" value={stats.total_incidents} color={colors.danger} />
         </View>
         <View className="w-1/2 px-2 mb-3">
-          <AdminStatCard
-            icon="warning"
-            label="Incidents"
-            value={stats.total_incidents}
-            color={colors.danger}
-          />
+          <AdminStatCard icon="people-circle" label="Workers" value={stats.total_workers} color={colors.success} />
         </View>
         <View className="w-1/2 px-2 mb-3">
-          <AdminStatCard
-            icon="cash"
-            label="MRR"
-            value={`£${stats.revenue_mrr}`}
-            color={colors.success}
-          />
+          <AdminStatCard icon="folder" label="Projects" value={stats.total_projects} color={colors.gray} />
         </View>
       </View>
 
@@ -133,7 +99,8 @@ function AdminContent({
           <View key={item.path} className="w-1/2 px-2 mb-3">
             <Pressable
               onPress={() => router.push(item.path as any)}
-              className="bg-white dark:bg-gray-800 p-4 rounded-xl flex-row items-center">
+              className="bg-white dark:bg-gray-800 p-4 rounded-xl flex-row items-center"
+            >
               <View
                 className="w-10 h-10 rounded-full items-center justify-center"
                 style={{ backgroundColor: item.color + '20' }}
