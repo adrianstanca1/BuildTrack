@@ -27,17 +27,17 @@ jobs:
       - name: Install Dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Install EAS CLI
-        run: npm install -g eas-cli
-
       - name: Download IPA
         run: |
           mkdir -p build-output
           curl -L -o build-output/buildtrack.ipa "${{ github.event.inputs.artifact_url }}"
           ls -la build-output/
 
-      - name: Submit to TestFlight via EAS
+      - name: Upload to TestFlight via altool
         run: |
-          eas submit --platform ios --path build-output/buildtrack.ipa --non-interactive
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          xcrun altool --upload-app \
+            -f build-output/buildtrack.ipa \
+            -t ios \
+            -u "${{ secrets.APPLE_ID }}" \
+            -p "${{ secrets.APP_SPECIFIC_PASSWORD }}" \
+            --verbose
