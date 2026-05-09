@@ -20,7 +20,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "ro.stancainvest.buildtrack",
-      "buildNumber": "1.1.0.3",
+      "buildNumber": "1.1.0.4",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "BuildTrack needs your location to show nearby construction projects and sites.",
         "NSCameraUsageDescription": "BuildTrack uses the camera to capture photos of sites and safety documentation.",
@@ -46,7 +46,7 @@
         "backgroundColor": "#1a365d"
       },
       "package": "ro.stancainvest.buildtrack",
-      "versionCode": 3,
+      "versionCode": 4,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
