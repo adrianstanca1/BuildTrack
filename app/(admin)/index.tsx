@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { View, Text, ScrollView, Pressable, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAdmin } from '../../hooks/useAdmin';
@@ -137,7 +138,7 @@ function AdminContent({
                 className="w-10 h-10 rounded-full items-center justify-center"
                 style={{ backgroundColor: item.color + '20' }}
               >
-                <Text className="text-xl"></>
+                <Ionicons name={item.icon} size={20} color={item.color} />
               </View>
               <Text className="ml-3 font-medium text-gray-900 dark:text-white">{item.label}</Text>
             </Pressable>

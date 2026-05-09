@@ -7,6 +7,9 @@ export type IncidentSeverity = 'low' | 'medium' | 'high' | 'critical';
 export type InspectionStatus = 'pending' | 'passed' | 'failed';
 export type WorkerRole = 'foreman' | 'electrician' | 'plumber' | 'carpenter' | 'mason' | 'laborer' | 'engineer' | 'safety-officer';
 export type WorkerStatus = 'active' | 'off-duty' | 'on-leave';
+export type UserRole = 'user' | 'admin' | 'super_admin';
+export type SubscriptionTier = 'free' | 'pro' | 'enterprise';
+export type SubscriptionStatus = 'active' | 'inactive' | 'past_due' | 'cancelled' | 'trialing';
 
 export interface Project {
   id: string;
@@ -75,4 +78,40 @@ export interface Worker {
   weeklyHours: number;
   certifications: string[];
   projectAssignments: string[];
+}
+
+export interface UserProfile {
+  id: string;
+  email?: string;
+  role: UserRole;
+  stripe_customer_id: string | null;
+  subscription_tier: SubscriptionTier;
+  subscription_status: SubscriptionStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Subscription {
+  id: string;
+  user_id: string;
+  stripe_subscription_id: string | null;
+  stripe_customer_id: string | null;
+  tier: SubscriptionTier;
+  status: SubscriptionStatus;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TierLimits {
+  tier: SubscriptionTier;
+  max_projects: number;
+  max_team_members: number;
+  max_storage_gb: number;
+  has_advanced_reports: boolean;
+  has_audit_logs: boolean;
+  has_priority_support: boolean;
+  price_monthly_gbp: number;
 }

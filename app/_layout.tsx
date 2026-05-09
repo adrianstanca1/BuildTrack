@@ -81,7 +81,7 @@ export default function RootLayout() {
                 options={{ presentation: 'modal' }}
               />
               <Stack.Screen name="settings" />
-              <Stack.Screen name="admin" />
+              <Stack.Screen name="(admin)" />
             </Stack>
           </AuthGuard>
         </AuthProvider>

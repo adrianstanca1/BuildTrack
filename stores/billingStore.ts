@@ -7,6 +7,7 @@ export type SubscriptionTier = 'free' | 'pro' | 'enterprise';
 export type SubscriptionStatus = 'active' | 'inactive' | 'past_due' | 'cancelled' | 'trialing';
 
 export interface TierLimits {
+  tier: SubscriptionTier;
   max_projects: number;
   max_team_members: number;
   max_storage_gb: number;
@@ -144,7 +145,11 @@ export const useBillingStore = create<BillingState>()(
 
           if (payload?.subscription && payload.subscription.id) {
             const sub = payload.subscription as unknown as Subscription;
-            set({ subscription: sub, limits: payload.limits as TierLimits, loading: false });
+            set({
+              subscription: sub,
+              limits: payload.limits as unknown as TierLimits,
+              loading: false,
+            });
           } else {
             // No active subscription — default to free limits
             const { data: tierData, error: tierError } = await supabase

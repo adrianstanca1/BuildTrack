@@ -99,7 +99,7 @@ export default function ProfileScreen() {
       label: 'Admin Dashboard',
       value: '',
       color: '#7c3aed',
-      onPress: () => router.push('/admin/dashboard'),
+      onPress: () => router.push('/(admin)' as any),
     },
   ];
 
