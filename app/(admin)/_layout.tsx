@@ -1,16 +1,13 @@
 import { Stack } from 'expo-router';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '../../contexts/AuthContext';
 import { Redirect } from 'expo-router';
 
 export default function AdminLayout() {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
 
   if (!user) {
     return <Redirect href="/(onboarding)/auth" />;
   }
-
-  // Optional: restrict to admin role
-  // if (!isAdmin) return <Redirect href="/(tabs)" />;
 
   return (
     <Stack

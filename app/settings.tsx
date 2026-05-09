@@ -1,9 +1,9 @@
-import { View, Text, ScrollView, Pressable, useColorScheme, Switch, Alert } from 'react-native';
+import { View, Text, TextInput, ScrollView, Pressable, useColorScheme, Switch, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { colors } from '../../constants/colors';
+import { colors } from '../constants/colors';
 
 export default function SettingsScreen() {
   const router = useRouter();
