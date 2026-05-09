@@ -36,22 +36,6 @@
       "associatedDomains": [
         "applinks:buildtrack.cortexbuildpro.com"
       ],
-      "UIBackgroundModes": [
-        "remote-notification"
-      ]
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#1a365d"
-      },
-      "package": "ro.stancainvest.buildtrack",
-      "versionCode": 4,
-      "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "CAMERA"
-      ],
       "intentFilters": [
         {
           "action": "VIEW",
@@ -93,11 +77,6 @@
         }
       ]
     ],
-    "appStoreUrl": "https://apps.apple.com/app/buildtrack",
-    "playStoreUrl": "https://play.google.com/store/apps/details?id=ro.stancainvest.buildtrack",
-    "privacyPolicyUrl": "https://buildtrack.cortexbuildpro.com/privacy",
-    "supportUrl": "https://buildtrack.cortexbuildpro.com/support",
-    "marketingUrl": "https://buildtrack.cortexbuildpro.com",
     "extra": {
       "eas": {
         "projectId": "cd4364ab-e24c-4973-96fe-6191e9b20b5d"
