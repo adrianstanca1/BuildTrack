@@ -119,7 +119,7 @@ export default function MaterialsListScreen() {
         )}
         ListEmptyComponent={
           <View className="items-center py-12">
-            <Ionicons name="cube-outline" size={48} color={COLORS.dark?.muted || '#9CA3AF'} />
+            <Ionicons name="cube-outline" size={48} color={COLORS.dark?.textSecondary || '#9CA3AF'} />
             <Text className="text-gray-500 mt-4 text-center">
               {categoryFilter || lowStockOnly
                 ? 'No matching materials'

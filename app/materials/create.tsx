@@ -7,6 +7,7 @@ import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '@/constants/theme';
 import { Button } from '@/components/ui/Button';
 import { useMaterialsStore } from '../../stores/materialsStore';
 import { useProjects } from '@/hooks/useProjects';
+import type { MaterialCategory } from '@/types/field';
 
 const CATEGORIES = [
   'concrete', 'steel', 'timber', 'brick', 'block',
@@ -16,7 +17,7 @@ const CATEGORIES = [
 
 export default function CreateMaterialScreen() {
   const [name, setName] = useState('');
-  const [category, setCategory] = useState('other');
+  const [category, setCategory] = useState<MaterialCategory>('other');
   const [unit, setUnit] = useState('');
   const [unitCost, setUnitCost] = useState('');
   const [quantityOnHand, setQuantityOnHand] = useState('');
@@ -79,7 +80,7 @@ export default function CreateMaterialScreen() {
   const labelStyle = {
     fontSize: TYPOGRAPHY.caption.fontSize,
     fontWeight: '500' as const,
-    color: COLORS.dark.muted,
+    color: COLORS.dark.textSecondary,
     marginBottom: SPACING.xs,
   };
 
@@ -99,7 +100,7 @@ export default function CreateMaterialScreen() {
             value={name}
             onChangeText={setName}
             placeholder="e.g. Portland Cement"
-            placeholderTextColor={COLORS.dark.muted}
+            placeholderTextColor={COLORS.dark.textSecondary}
             style={{ color: COLORS.dark.text }}
           />
         </View>
@@ -110,7 +111,7 @@ export default function CreateMaterialScreen() {
             {CATEGORIES.map((c) => (
               <TouchableOpacity
                 key={c}
-                onPress={() => setCategory(c)}
+                onPress={() => setCategory(c as MaterialCategory)}
                 className={`px-3 py-1.5 rounded-full ${category === c ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`}
               >
                 <Text className={`text-xs font-medium ${category === c ? 'text-white' : 'text-gray-600 dark:text-gray-300'}`}>
@@ -127,7 +128,7 @@ export default function CreateMaterialScreen() {
             value={unit}
             onChangeText={setUnit}
             placeholder="e.g. m³, kg, pcs"
-            placeholderTextColor={COLORS.dark.muted}
+            placeholderTextColor={COLORS.dark.textSecondary}
             style={{ color: COLORS.dark.text }}
           />
         </View>
@@ -140,7 +141,7 @@ export default function CreateMaterialScreen() {
               onChangeText={setUnitCost}
               keyboardType="decimal-pad"
               placeholder="0.00"
-              placeholderTextColor={COLORS.dark.muted}
+              placeholderTextColor={COLORS.dark.textSecondary}
               style={{ color: COLORS.dark.text }}
             />
           </View>
@@ -151,7 +152,7 @@ export default function CreateMaterialScreen() {
               onChangeText={setQuantityOnHand}
               keyboardType="decimal-pad"
               placeholder="0"
-              placeholderTextColor={COLORS.dark.muted}
+              placeholderTextColor={COLORS.dark.textSecondary}
               style={{ color: COLORS.dark.text }}
             />
           </View>
@@ -165,7 +166,7 @@ export default function CreateMaterialScreen() {
               onChangeText={setQuantityOrdered}
               keyboardType="decimal-pad"
               placeholder="0"
-              placeholderTextColor={COLORS.dark.muted}
+              placeholderTextColor={COLORS.dark.textSecondary}
               style={{ color: COLORS.dark.text }}
             />
           </View>
@@ -175,7 +176,7 @@ export default function CreateMaterialScreen() {
               value={projectId}
               onChangeText={setProjectId}
               placeholder="Optional"
-              placeholderTextColor={COLORS.dark.muted}
+              placeholderTextColor={COLORS.dark.textSecondary}
               style={{ color: COLORS.dark.text }}
             />
           </View>
@@ -189,7 +190,7 @@ export default function CreateMaterialScreen() {
               onChangeText={setReorderLevel}
               keyboardType="decimal-pad"
               placeholder="0"
-              placeholderTextColor={COLORS.dark.muted}
+              placeholderTextColor={COLORS.dark.textSecondary}
               style={{ color: COLORS.dark.text }}
             />
           </View>
@@ -200,7 +201,7 @@ export default function CreateMaterialScreen() {
               onChangeText={setReorderQuantity}
               keyboardType="decimal-pad"
               placeholder="0"
-              placeholderTextColor={COLORS.dark.muted}
+              placeholderTextColor={COLORS.dark.textSecondary}
               style={{ color: COLORS.dark.text }}
             />
           </View>
@@ -213,7 +214,7 @@ export default function CreateMaterialScreen() {
               value={supplierName}
               onChangeText={setSupplierName}
               placeholder="e.g. Travis Perkins"
-              placeholderTextColor={COLORS.dark.muted}
+              placeholderTextColor={COLORS.dark.textSecondary}
               style={{ color: COLORS.dark.text }}
             />
           </View>
@@ -223,7 +224,7 @@ export default function CreateMaterialScreen() {
               value={location}
               onChangeText={setLocation}
               placeholder="e.g. Site shed A"
-              placeholderTextColor={COLORS.dark.muted}
+              placeholderTextColor={COLORS.dark.textSecondary}
               style={{ color: COLORS.dark.text }}
             />
           </View>
@@ -237,7 +238,7 @@ export default function CreateMaterialScreen() {
             multiline
             numberOfLines={3}
             placeholder="Additional notes..."
-            placeholderTextColor={COLORS.dark.muted}
+            placeholderTextColor={COLORS.dark.textSecondary}
             style={{ color: COLORS.dark.text, textAlignVertical: 'top' }}
           />
         </View>
