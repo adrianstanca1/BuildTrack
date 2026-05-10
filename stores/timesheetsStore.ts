@@ -20,6 +20,7 @@ interface TimesheetsState {
   getTimesheetsByWorker: (workerId: string) => Timesheet[];
   getTimesheetsByStatus: (status: TimesheetStatus) => Timesheet[];
   getTotalHoursForDate: (date: string) => number;
+  getTotalPayForDate: (date: string) => number;
 
   fetchTimesheets: () => Promise<void>;
   createTimesheet: (timesheet: Omit<Timesheet, 'id' | 'createdAt'>) => Promise<Timesheet | null>;
@@ -51,6 +52,10 @@ export const useTimesheetsStore = create<TimesheetsState>()(
         get().timesheets
           .filter((t) => t.date === date)
           .reduce((sum, t) => sum + t.hoursWorked + t.overtimeHours, 0),
+      getTotalPayForDate: (date) =>
+        get().timesheets
+          .filter((t) => t.date === date)
+          .reduce((sum, t) => sum + t.totalPay, 0),
 
       fetchTimesheets: async () => {
         set({ loading: true, error: null });

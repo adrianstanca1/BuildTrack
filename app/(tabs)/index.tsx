@@ -131,7 +131,7 @@ export default function DashboardScreen() {
         <View style={{ flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.lg }}>
           <StatCard icon={Building2} label="Active" value={activeProjects} color={COLORS.dark.primary} onPress={() => router.push('/projects')} />
           <StatCard icon={ClipboardList} label="Pending" value={pendingTasks} color={COLORS.dark.accent} onPress={() => router.push('/tasks')} />
-          <StatCard icon={Users} label="Workers" value={totalWorkers} color={COLORS.dark.success} onPress={() => router.push('/workers')} />
+          <StatCard icon={Users} label="Workers" value={totalWorkers} color={COLORS.dark.success} onPress={() => router.push('/team')} />
         </View>
 
         {/* Recent Projects */}
