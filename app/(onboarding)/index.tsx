@@ -95,79 +95,69 @@ export default function OnboardingScreen() {
     width: withSpring(`${((currentIndex + 1) / slides.length) * 100}%`, { damping: 20, stiffness: 100 }),
   }));
 
-  const renderSlide = ({ item, index }: { item: typeof slides[0]; index: number }) => {
-    const slideAnim = useAnimatedStyle(() => ({
-      opacity: withTiming(index === currentIndex ? 1 : 0.5, { duration: 300 }),
-      transform: [{ scale: withSpring(index === currentIndex ? 1 : 0.9, { damping: 15, stiffness: 100 }) }],
-    }));
-
-    return (
-      <Animated.View
-        style={[
-          {
-            width: SCREEN_WIDTH,
-            paddingHorizontal: 32,
-            alignItems: 'center',
-            justifyContent: 'center',
-          },
-          slideAnim,
-        ]}
+  const renderSlide = ({ item }: { item: typeof slides[0] }) => (
+    <View
+      style={{
+        width: SCREEN_WIDTH,
+        paddingHorizontal: 32,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      {/* Icon */}
+      <View
+        style={{
+          width: 120,
+          height: 120,
+          borderRadius: RADIUS['2xl'],
+          backgroundColor: item.color + '15',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 32,
+        }}
       >
-        {/* Icon */}
         <View
           style={{
-            width: 120,
-            height: 120,
-            borderRadius: RADIUS['2xl'],
-            backgroundColor: item.color + '15',
+            width: 80,
+            height: 80,
+            borderRadius: RADIUS.xl,
+            backgroundColor: item.color,
             alignItems: 'center',
             justifyContent: 'center',
-            marginBottom: 32,
+            ...SHADOWS.md,
           }}
         >
-          <View
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: RADIUS.xl,
-              backgroundColor: item.color,
-              alignItems: 'center',
-              justifyContent: 'center',
-              ...SHADOWS.md,
-            }}
-          >
-            <Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={40} color="white" />
-          </View>
+          <Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={40} color="white" />
         </View>
+      </View>
 
-        {/* Title */}
-        <Text
-          style={{
-            fontSize: TYPOGRAPHY.h1.size,
-            fontWeight: TYPOGRAPHY.h1.weight,
-            color: c.text,
-            textAlign: 'center',
-            marginBottom: 12,
-          }}
-        >
-          {item.title}
-        </Text>
+      {/* Title */}
+      <Text
+        style={{
+          fontSize: TYPOGRAPHY.h1.size,
+          fontWeight: TYPOGRAPHY.h1.weight,
+          color: c.text,
+          textAlign: 'center',
+          marginBottom: 12,
+        }}
+      >
+        {item.title}
+      </Text>
 
-        {/* Description */}
-        <Text
-          style={{
-            fontSize: TYPOGRAPHY.body.size,
-            color: c.textMuted,
-            textAlign: 'center',
-            lineHeight: 24,
-            maxWidth: 320,
-          }}
-        >
-          {item.description}
-        </Text>
-      </Animated.View>
-    );
-  };
+      {/* Description */}
+      <Text
+        style={{
+          fontSize: TYPOGRAPHY.body.size,
+          color: c.textMuted,
+          textAlign: 'center',
+          lineHeight: 24,
+          maxWidth: 320,
+        }}
+      >
+        {item.description}
+      </Text>
+    </View>
+  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>

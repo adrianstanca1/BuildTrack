@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
-import type { Timesheet, TimesheetStatus } from '../types/field';
+import type { Timesheet, TimesheetStatus, TimesheetCategory } from '../types/field';
 
 interface TimesheetsState {
   timesheets: Timesheet[];
@@ -69,22 +69,22 @@ export const useTimesheetsStore = create<TimesheetsState>()(
 
           const timesheets: Timesheet[] = (data || []).map((item) => ({
             id: item.id,
-            workerId: item.worker_id,
-            workerName: item.worker_name,
-            workerRole: item.worker_role,
-            projectId: item.project_id,
-            projectName: item.project_name,
+            workerId: item.worker_id ?? '',
+            workerName: '',
+            workerRole: undefined,
+            projectId: item.project_id ?? undefined,
+            projectName: '',
             date: item.date,
-            hoursWorked: item.hours_worked,
-            overtimeHours: item.overtime_hours,
-            hourlyRate: item.hourly_rate,
-            overtimeRate: item.overtime_rate,
-            workDescription: item.work_description,
-            category: item.category,
-            status: item.status,
-            notes: item.notes,
-            totalPay: item.total_pay,
-            createdAt: item.created_at,
+            hoursWorked: item.hours_worked ?? 0,
+            overtimeHours: item.overtime_hours ?? 0,
+            hourlyRate: 0,
+            overtimeRate: 0,
+            workDescription: item.notes ?? undefined,
+            category: 'regular' as TimesheetCategory,
+            status: (item.status ?? 'submitted') as TimesheetStatus,
+            notes: item.notes ?? undefined,
+            totalPay: 0,
+            createdAt: item.created_at ?? new Date().toISOString(),
           }));
 
           set({ timesheets, loading: false });
@@ -122,22 +122,22 @@ export const useTimesheetsStore = create<TimesheetsState>()(
 
           const timesheet: Timesheet = {
             id: data.id,
-            workerId: data.worker_id,
-            workerName: data.worker_name,
-            workerRole: data.worker_role,
-            projectId: data.project_id,
-            projectName: data.project_name,
+            workerId: data.worker_id ?? '',
+            workerName: '',
+            workerRole: undefined,
+            projectId: data.project_id ?? undefined,
+            projectName: '',
             date: data.date,
-            hoursWorked: data.hours_worked,
-            overtimeHours: data.overtime_hours,
-            hourlyRate: data.hourly_rate,
-            overtimeRate: data.overtime_rate,
-            workDescription: data.work_description,
-            category: data.category,
-            status: data.status,
-            notes: data.notes,
-            totalPay: data.total_pay,
-            createdAt: data.created_at,
+            hoursWorked: data.hours_worked ?? 0,
+            overtimeHours: data.overtime_hours ?? 0,
+            hourlyRate: 0,
+            overtimeRate: 0,
+            workDescription: data.notes ?? undefined,
+            category: 'regular' as TimesheetCategory,
+            status: (data.status ?? 'submitted') as TimesheetStatus,
+            notes: data.notes ?? undefined,
+            totalPay: 0,
+            createdAt: data.created_at ?? new Date().toISOString(),
           };
 
           set((state) => ({ timesheets: [timesheet, ...state.timesheets], loading: false }));

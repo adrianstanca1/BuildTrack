@@ -40,14 +40,14 @@ export const useBudgetStore = create<BudgetState>()(
         set({ loading: true, error: null });
         try {
           const { data, error } = await supabase
-            .from('cost_entries')
+            .from('cost_entries' as any)
             .select('*')
             .order('date', { ascending: false })
             .limit(100);
 
           if (error) throw error;
 
-          const entries: CostEntry[] = (data || []).map((item: any) => ({
+          const entries: CostEntry[] = ((data as any[]) || []).map((item: any) => ({
             id: item.id,
             projectId: item.project_id,
             budgetCategoryId: item.budget_category_id,
@@ -73,7 +73,7 @@ export const useBudgetStore = create<BudgetState>()(
         set({ loading: true, error: null });
         try {
           const { data, error } = await supabase
-            .from('cost_entries')
+            .from('cost_entries' as any)
             .insert({
               project_id: entryData.projectId,
               budget_category_id: entryData.budgetCategoryId,
@@ -93,19 +93,19 @@ export const useBudgetStore = create<BudgetState>()(
           if (error) throw error;
 
           const entry: CostEntry = {
-            id: data.id,
-            projectId: data.project_id,
-            budgetCategoryId: data.budget_category_id,
-            entryType: data.entry_type,
-            description: data.description,
-            amount: data.amount || 0,
-            quantity: data.quantity || 1,
-            unit: data.unit,
-            vendor: data.vendor,
-            costCode: data.cost_code,
-            date: data.date,
-            notes: data.notes,
-            createdAt: data.created_at,
+            id: (data as any).id,
+            projectId: (data as any).project_id,
+            budgetCategoryId: (data as any).budget_category_id,
+            entryType: (data as any).entry_type,
+            description: (data as any).description,
+            amount: (data as any).amount || 0,
+            quantity: (data as any).quantity || 1,
+            unit: (data as any).unit,
+            vendor: (data as any).vendor,
+            costCode: (data as any).cost_code,
+            date: (data as any).date,
+            notes: (data as any).notes,
+            createdAt: (data as any).created_at,
           };
 
           set((state) => ({ entries: [entry, ...state.entries], loading: false }));
