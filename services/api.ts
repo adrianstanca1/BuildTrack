@@ -291,6 +291,24 @@ class ApiClient {
   async deleteRFI(id: string) {
     return this.request(`/rfis/${id}`, { method: 'DELETE' });
   }
+
+  // Timesheets
+  async getTimesheets(params?: { projectId?: string; workerId?: string; status?: string; dateFrom?: string; dateTo?: string }) {
+    const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+    return this.request(`/timesheets${qs}`);
+  }
+
+  async createTimesheet(data: Record<string, any>) {
+    return this.request('/timesheets', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async updateTimesheet(id: string, data: Record<string, any>) {
+    return this.request(`/timesheets/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  }
+
+  async deleteTimesheet(id: string) {
+    return this.request(`/timesheets/${id}`, { method: 'DELETE' });
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

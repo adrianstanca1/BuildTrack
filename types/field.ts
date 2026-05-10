@@ -247,8 +247,8 @@ export interface ChangeOrder {
   proposedCost: number;
   originalScheduleDays: number;
   proposedScheduleDays: number;
-  impactCost?: number;
-  impactDays?: number;
+  impactCost: number;
+  impactDays: number;
   reviewedBy?: string;
   approvedBy?: string;
   reviewedDate?: string;
