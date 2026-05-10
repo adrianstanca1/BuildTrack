@@ -12,6 +12,10 @@ export type SubmittalStatus = 'draft' | 'submitted' | 'under-review' | 'approved
 export type DrawingStatus = 'active' | 'superseded' | 'archived';
 export type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'paid' | 'overdue';
 
+export type PunchItemStatus = 'open' | 'in-progress' | 'resolved' | 'closed';
+export type PunchItemSeverity = 'cosmetic' | 'minor' | 'major' | 'critical';
+export type DelayNoteStatus = 'open' | 'resolved' | 'closed';
+
 export interface Defect {
   id: string;
   title: string;
@@ -113,5 +117,42 @@ export interface Invoice {
   issueDate: string;
   dueDate?: string;
   paidDate?: string;
+  createdAt: string;
+}
+
+export interface PunchItem {
+  id: string;
+  title: string;
+  projectId?: string;
+  projectName: string;
+  status: PunchItemStatus;
+  severity: PunchItemSeverity;
+  location?: string;
+  assignee?: string;
+  photoUrls?: string[];
+  createdAt: string;
+  resolvedAt?: string;
+}
+
+export interface SitePhoto {
+  id: string;
+  projectId?: string;
+  projectName: string;
+  location?: string;
+  tags: string[];
+  caption?: string;
+  photoUrl: string;
+  uploadedBy: string;
+  createdAt: string;
+}
+
+export interface DelayNote {
+  id: string;
+  projectId?: string;
+  projectName: string;
+  status: DelayNoteStatus;
+  reason: string;
+  description?: string;
+  linkedRfiId?: string;
   createdAt: string;
 }

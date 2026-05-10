@@ -86,6 +86,12 @@ export default function RootLayout() {
               <Stack.Screen name="settings" />
               <Stack.Screen name="(admin)" />
               <Stack.Screen name="quick-actions" />
+              <Stack.Screen name="punch-items" />
+              <Stack.Screen name="site-photos" />
+              <Stack.Screen name="delay-notes" />
+              <Stack.Screen name="drawings" />
+              <Stack.Screen name="invoices" />
+              <Stack.Screen name="team" />
             </Stack>
           </AuthGuard>
         </AuthProvider>
