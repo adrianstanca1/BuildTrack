@@ -36,6 +36,14 @@
         "applinks:buildtrack.cortexbuildpro.com"
       ]
     },
+    "android": {
+      "package": "ro.stancainvest.buildtrack",
+      "versionCode": 10,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a365d"
+      }
+    },
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
