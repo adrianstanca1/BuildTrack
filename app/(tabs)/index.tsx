@@ -7,7 +7,7 @@ import { useTasks } from '@/hooks/useTasks';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useIncidents } from '@/hooks/useSafety';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '@/constants/theme';
-import { Building2, ClipboardList, AlertTriangle, Users, Bell, TrendingUp, ArrowRight, ShieldAlert } from 'lucide-react-native';
+import { Building2, ClipboardList, AlertTriangle, Users, Bell, TrendingUp, ArrowRight, ShieldAlert, Bug, FileText, Clock } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { BarChart } from '@/components/charts/BarChart';
 import { DonutChart } from '@/components/charts/DonutChart';
@@ -220,6 +220,9 @@ export default function DashboardScreen() {
           <QuickAction icon={Building2} label="New Project" color={COLORS.dark.primary} onPress={() => router.push('/project/create')} />
           <QuickAction icon={ClipboardList} label="Add Task" color={COLORS.dark.accent} onPress={() => router.push('/task/create')} />
           <QuickAction icon={AlertTriangle} label="Report Incident" color={COLORS.dark.danger} onPress={() => router.push('/safety/report')} />
+          <QuickAction icon={Bug} label="Log Defect" color={COLORS.dark.warning} onPress={() => router.push('/defects/create')} />
+          <QuickAction icon={FileText} label="New Permit" color={COLORS.dark.info} onPress={() => router.push('/permits/create')} />
+          <QuickAction icon={Clock} label="Add Timesheet" color={COLORS.dark.success} onPress={() => router.push('/timesheets/create')} />
           <QuickAction icon={Bell} label={`Notifications ${unreadNotifications > 0 ? `(${unreadNotifications})` : ''}`} color={COLORS.dark.warning} onPress={() => router.push('/notifications')} />
         </View>
       </ScrollView>
