@@ -15,6 +15,8 @@ export type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'paid' | 'overd
 export type PunchItemStatus = 'open' | 'in-progress' | 'resolved' | 'closed';
 export type PunchItemSeverity = 'cosmetic' | 'minor' | 'major' | 'critical';
 export type DelayNoteStatus = 'open' | 'resolved' | 'closed';
+export type MeetingType = 'safety_toolbox' | 'standup' | 'client_walkthrough' | 'change_order' | 'quality_review' | 'progress_review' | 'closeout' | 'other';
+export type MeetingStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 
 export interface Defect {
   id: string;
@@ -154,5 +156,28 @@ export interface DelayNote {
   reason: string;
   description?: string;
   linkedRfiId?: string;
+  createdAt: string;
+}
+
+export interface MeetingAttendee {
+  name: string;
+  role: string;
+  email: string;
+  present: boolean;
+}
+
+export interface Meeting {
+  id: string;
+  projectId?: string;
+  projectName: string;
+  title: string;
+  meetingType: MeetingType;
+  scheduledAt: string;
+  durationMinutes: number;
+  location?: string;
+  agenda?: string;
+  notes?: string;
+  status: MeetingStatus;
+  attendees: MeetingAttendee[];
   createdAt: string;
 }
