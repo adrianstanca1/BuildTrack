@@ -18,6 +18,16 @@ export type DelayNoteStatus = 'open' | 'resolved' | 'closed';
 export type MeetingType = 'safety_toolbox' | 'standup' | 'client_walkthrough' | 'change_order' | 'quality_review' | 'progress_review' | 'closeout' | 'other';
 export type MeetingStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 
+export type PurchaseOrderStatus = 'draft' | 'sent' | 'acknowledged' | 'partially_delivered' | 'delivered' | 'invoiced' | 'paid' | 'cancelled';
+
+export interface PurchaseOrderItem {
+  description: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  totalPrice: number;
+}
+
 export interface Defect {
   id: string;
   title: string;
@@ -164,6 +174,29 @@ export interface MeetingAttendee {
   role: string;
   email: string;
   present: boolean;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  projectId?: string;
+  projectName: string;
+  poNumber: string;
+  title: string;
+  description?: string;
+  vendorName: string;
+  vendorEmail?: string;
+  vendorPhone?: string;
+  status: PurchaseOrderStatus;
+  items: PurchaseOrderItem[];
+  subtotal: number;
+  taxRate: number;
+  taxAmount: number;
+  total: number;
+  deliveryDate?: string;
+  expectedDelivery?: string;
+  deliveryAddress?: string;
+  notes?: string;
+  createdAt: string;
 }
 
 export interface Meeting {
