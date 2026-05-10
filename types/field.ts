@@ -20,6 +20,9 @@ export type MeetingStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancell
 
 export type PurchaseOrderStatus = 'draft' | 'sent' | 'acknowledged' | 'partially_delivered' | 'delivered' | 'invoiced' | 'paid' | 'cancelled';
 
+export type EquipmentType = 'excavator' | 'bulldozer' | 'crane' | 'loader' | 'dump_truck' | 'mixer' | 'generator' | 'scaffold' | 'scissor_lift' | 'forklift' | 'compactor' | 'other';
+export type EquipmentStatus = 'available' | 'rented' | 'on_site' | 'under_maintenance' | 'out_of_service' | 'retired';
+
 export interface PurchaseOrderItem {
   description: string;
   quantity: number;
@@ -212,5 +215,27 @@ export interface Meeting {
   notes?: string;
   status: MeetingStatus;
   attendees: MeetingAttendee[];
+  createdAt: string;
+}
+
+export interface Equipment {
+  id: string;
+  userId?: string;
+  projectId?: string;
+  projectName: string;
+  name: string;
+  type: EquipmentType;
+  make?: string;
+  model?: string;
+  serialNumber?: string;
+  year?: number;
+  status: EquipmentStatus;
+  dailyRate?: number;
+  purchasePrice?: number;
+  purchaseDate?: string;
+  insuranceExpiry?: string;
+  motExpiry?: string;
+  location?: string;
+  notes?: string;
   createdAt: string;
 }
