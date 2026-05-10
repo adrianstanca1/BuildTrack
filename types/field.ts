@@ -29,6 +29,21 @@ export type EquipmentStatus = 'available' | 'rented' | 'on_site' | 'under_mainte
 
 export type MaterialCategory = 'concrete' | 'steel' | 'timber' | 'brick' | 'block' | 'insulation' | 'roofing' | 'electrical' | 'plumbing' | 'paint' | 'hardware' | 'aggregate' | 'other';
 
+export type DrawingPinType = 'defect' | 'rfi' | 'note' | 'task';
+
+export interface DrawingPin {
+  id: string;
+  drawingId: string;
+  x: number;
+  y: number;
+  type: DrawingPinType;
+  title?: string;
+  description?: string;
+  relatedId?: string;
+  createdBy?: string;
+  createdAt: string;
+}
+
 export interface PurchaseOrderItem {
   description: string;
   quantity: number;
