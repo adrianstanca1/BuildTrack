@@ -47,8 +47,11 @@ jobs:
           jq --arg new "$NEW" '.expo.ios.buildNumber = $new' app.json > app.json.tmp && mv app.json.tmp app.json
           cat app.json | grep buildNumber
 
+      # Use production profile for store distribution (TestFlight/App Store).
+      # preview profile uses internal/ad-hoc distribution which conflicts with
+      # App Store credentials. Production profile uses ascAppId/ascApiKey.
       - name: Build iOS on EAS
-        run: eas build --platform ios --profile preview --non-interactive --no-wait
+        run: eas build --platform ios --profile production --non-interactive --no-wait
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
