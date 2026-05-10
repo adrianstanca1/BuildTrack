@@ -55,9 +55,13 @@ export default function CreateTimesheetScreen() {
         projectName: projects.find((p: any) => p.id === projectId)?.name || 'No Project',
         date: date.trim(),
         hoursWorked: hours,
-        overtime: parseFloat(overtime) || 0,
+        overtimeHours: parseFloat(overtime) || 0,
+        hourlyRate: 0,
+        overtimeRate: 0,
+        category: 'regular',
         status: status as any,
         notes: notes.trim() || undefined,
+        totalPay: 0,
       });
       Alert.alert('Success', 'Timesheet created successfully', [
         { text: 'OK', onPress: () => router.back() },

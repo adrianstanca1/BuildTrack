@@ -120,7 +120,7 @@ export default function TimesheetsScreen() {
                       <Ionicons name="time-outline" size={14} color={colors.primary} />
                       <Text className="text-xs text-gray-500 ml-1">
                         {item.hoursWorked}h
-                        {item.overtime > 0 && <Text className="text-orange-500"> +{item.overtime}h OT</Text>}
+                        {item.overtimeHours > 0 && <Text className="text-orange-500"> +{item.overtimeHours}h OT</Text>}
                       </Text>
                     </View>
                   </View>
