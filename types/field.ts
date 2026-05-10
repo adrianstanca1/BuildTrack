@@ -5,7 +5,8 @@ export type DefectStatus = 'open' | 'in-progress' | 'resolved' | 'closed';
 export type DefectSeverity = 'cosmetic' | 'minor' | 'major' | 'critical';
 export type PermitType = 'building' | 'electrical' | 'plumbing' | 'demolition' | 'scaffolding' | 'general';
 export type PermitStatus = 'draft' | 'submitted' | 'approved' | 'rejected' | 'expired';
-export type TimesheetStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
+export type TimesheetStatus = 'submitted' | 'approved' | 'rejected' | 'paid';
+export type TimesheetCategory = 'regular' | 'overtime' | 'weekend' | 'holiday' | 'sick' | 'leave';
 
 export type RfiStatus = 'draft' | 'submitted' | 'open' | 'answered' | 'closed';
 export type SubmittalStatus = 'draft' | 'submitted' | 'under-review' | 'approved' | 'rejected';
@@ -66,13 +67,19 @@ export interface Timesheet {
   id: string;
   workerId: string;
   workerName: string;
+  workerRole?: string;
   projectId?: string;
   projectName: string;
   date: string;
   hoursWorked: number;
-  overtime: number;
+  overtimeHours: number;
+  hourlyRate: number;
+  overtimeRate: number;
+  workDescription?: string;
+  category: TimesheetCategory;
   status: TimesheetStatus;
   notes?: string;
+  totalPay: number;
   createdAt: string;
 }
 

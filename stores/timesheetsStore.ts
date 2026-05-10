@@ -50,7 +50,7 @@ export const useTimesheetsStore = create<TimesheetsState>()(
       getTotalHoursForDate: (date) =>
         get().timesheets
           .filter((t) => t.date === date)
-          .reduce((sum, t) => sum + t.hoursWorked + t.overtime, 0),
+          .reduce((sum, t) => sum + t.hoursWorked + t.overtimeHours, 0),
 
       fetchTimesheets: async () => {
         set({ loading: true, error: null });
@@ -62,17 +62,23 @@ export const useTimesheetsStore = create<TimesheetsState>()(
 
           if (error) throw error;
 
-          const timesheets = (data || []).map((item) => ({
+          const timesheets: Timesheet[] = (data || []).map((item) => ({
             id: item.id,
             workerId: item.worker_id,
             workerName: item.worker_name,
+            workerRole: item.worker_role,
             projectId: item.project_id,
             projectName: item.project_name,
             date: item.date,
             hoursWorked: item.hours_worked,
-            overtime: item.overtime,
+            overtimeHours: item.overtime_hours,
+            hourlyRate: item.hourly_rate,
+            overtimeRate: item.overtime_rate,
+            workDescription: item.work_description,
+            category: item.category,
             status: item.status,
             notes: item.notes,
+            totalPay: item.total_pay,
             createdAt: item.created_at,
           }));
 
@@ -90,13 +96,19 @@ export const useTimesheetsStore = create<TimesheetsState>()(
             .insert({
               worker_id: timesheetData.workerId,
               worker_name: timesheetData.workerName,
+              worker_role: timesheetData.workerRole,
               project_id: timesheetData.projectId,
               project_name: timesheetData.projectName,
               date: timesheetData.date,
               hours_worked: timesheetData.hoursWorked,
-              overtime: timesheetData.overtime,
+              overtime_hours: timesheetData.overtimeHours,
+              hourly_rate: timesheetData.hourlyRate,
+              overtime_rate: timesheetData.overtimeRate,
+              work_description: timesheetData.workDescription,
+              category: timesheetData.category,
               status: timesheetData.status,
               notes: timesheetData.notes,
+              total_pay: timesheetData.totalPay,
             })
             .select()
             .single();
@@ -107,13 +119,19 @@ export const useTimesheetsStore = create<TimesheetsState>()(
             id: data.id,
             workerId: data.worker_id,
             workerName: data.worker_name,
+            workerRole: data.worker_role,
             projectId: data.project_id,
             projectName: data.project_name,
             date: data.date,
             hoursWorked: data.hours_worked,
-            overtime: data.overtime,
+            overtimeHours: data.overtime_hours,
+            hourlyRate: data.hourly_rate,
+            overtimeRate: data.overtime_rate,
+            workDescription: data.work_description,
+            category: data.category,
             status: data.status,
             notes: data.notes,
+            totalPay: data.total_pay,
             createdAt: data.created_at,
           };
 
