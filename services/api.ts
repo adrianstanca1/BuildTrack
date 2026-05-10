@@ -235,6 +235,62 @@ class ApiClient {
   async getActivity() {
     return this.request('/dashboard/activity');
   }
+
+  // Punch Items
+  async getPunchItems(params?: { projectId?: string; status?: string }) {
+    const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+    return this.request(`/punch-items${qs}`);
+  }
+
+  async createPunchItem(data: Record<string, any>) {
+    return this.request('/punch-items', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async updatePunchItemStatus(id: string, status: string) {
+    return this.request(`/punch-items/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
+  }
+
+  // Site Photos
+  async getSitePhotos(params?: { projectId?: string; tag?: string }) {
+    const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+    return this.request(`/site-photos${qs}`);
+  }
+
+  async createSitePhoto(data: Record<string, any>) {
+    return this.request('/site-photos', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  // Delay Notes
+  async getDelayNotes(params?: { projectId?: string; status?: string }) {
+    const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+    return this.request(`/delay-notes${qs}`);
+  }
+
+  async createDelayNote(data: Record<string, any>) {
+    return this.request('/delay-notes', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async updateDelayNoteStatus(id: string, status: string) {
+    return this.request(`/delay-notes/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
+  }
+
+  // RFIs
+  async getRFIs(params?: { projectId?: string; status?: string; priority?: string }) {
+    const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+    return this.request(`/rfis${qs}`);
+  }
+
+  async createRFI(data: Record<string, any>) {
+    return this.request('/rfis', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async updateRFI(id: string, data: Record<string, any>) {
+    return this.request(`/rfis/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  }
+
+  async deleteRFI(id: string) {
+    return this.request(`/rfis/${id}`, { method: 'DELETE' });
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

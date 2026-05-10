@@ -1,66 +1,86 @@
-import { View, Text, Pressable, ScrollView, useColorScheme } from 'react-native';
+import React from 'react';
+import { View, Text, ScrollView, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, SPACING, RADIUS } from '../../constants/theme';
+import { COLORS, SPACING } from '@/constants/theme';
 
-const quickActions = [
-  { key: 'punch', label: 'Punch Item', icon: 'hammer' as const, color: COLORS.danger, path: '/quick-actions/punch' },
-  { key: 'photo', label: 'Photo', icon: 'camera' as const, color: COLORS.primary[500], path: '/quick-actions/photo' },
-  { key: 'delay', label: 'Delay Note', icon: 'time' as const, color: COLORS.warning, path: '/quick-actions/delay' },
-  { key: 'safety', label: 'Safety', icon: 'shield-checkmark' as const, color: COLORS.success, path: '/quick-actions/safety' },
-  { key: 'rfi', label: 'Quick RFI', icon: 'chatbox-ellipses' as const, color: COLORS.info, path: '/quick-actions/rfi' },
+const ACTIONS = [
+  {
+    key: 'punch',
+    label: 'Punch Item',
+    sublabel: 'Log a snag or incomplete work item',
+    icon: 'construct-outline' as const,
+    color: '#f97316',
+    route: '/quick-actions/punch' as const,
+  },
+  {
+    key: 'photo',
+    label: 'Site Photo',
+    sublabel: 'Snap and tag a photo with project context',
+    icon: 'camera-outline' as const,
+    color: '#8b5cf6',
+    route: '/quick-actions/photo' as const,
+  },
+  {
+    key: 'delay',
+    label: 'Delay Note',
+    sublabel: 'Record a delay reason with timestamp',
+    icon: 'time-outline' as const,
+    color: '#ef4444',
+    route: '/quick-actions/delay' as const,
+  },
+  {
+    key: 'safety',
+    label: 'Safety Observation',
+    sublabel: 'Report a hazard or near-miss fast',
+    icon: 'warning-outline' as const,
+    color: '#eab308',
+    route: '/quick-actions/safety' as const,
+  },
+  {
+    key: 'rfi',
+    label: 'RFI',
+    sublabel: 'Request for Information — ask a question',
+    icon: 'chatbubble-ellipses-outline' as const,
+    color: '#3b82f6',
+    route: '/quick-actions/rfi' as const,
+  },
 ];
 
-export default function QuickActionsScreen() {
+export default function QuickActionsHub() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? COLORS.dark.background : COLORS.light.background }} edges={['top']}>
-      <ScrollView style={{ padding: SPACING.md }}>
-        <Text style={{ fontSize: 22, fontWeight: '700', color: isDark ? COLORS.dark.text : COLORS.light.text, marginBottom: SPACING.md }}>
-          Quick Actions
-        </Text>
-        <Text style={{ fontSize: 14, color: isDark ? COLORS.dark.textMuted : COLORS.light.textMuted, marginBottom: SPACING.lg }}>
-          Capture field events in under 30 seconds
-        </Text>
+    <SafeAreaView className="flex-1 bg-[#0f172a]" edges={['top']}>
+      <View className="px-4 pt-2 pb-4 flex-row items-center">
+        <Pressable onPress={() => router.back()} className="mr-3">
+          <Ionicons name="close-outline" size={28} color={COLORS.dark.textMuted} />
+        </Pressable>
+        <Text className="text-white text-xl font-bold">Quick Actions</Text>
+      </View>
 
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.md }}>
-          {quickActions.map((action) => (
-            <Pressable
-              key={action.key}
-              onPress={() => router.push(action.path as any)}
-              style={{
-                width: '47%',
-                aspectRatio: 1,
-                borderRadius: RADIUS.lg,
-                backgroundColor: isDark ? COLORS.dark.surface : COLORS.light.surface,
-                borderWidth: 1,
-                borderColor: isDark ? COLORS.dark.border : COLORS.light.border,
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: SPACING.md,
-              }}
+      <ScrollView contentContainerStyle={{ padding: SPACING.md, paddingBottom: SPACING.xl }}>
+        {ACTIONS.map((action) => (
+          <Pressable
+            key={action.key}
+            onPress={() => router.push(action.route)}
+            className="bg-[#1e293b] rounded-2xl p-4 mb-3 flex-row items-center active:opacity-80"
+            android_ripple={{ color: 'rgba(255,255,255,0.05)' }}
+          >
+            <View
+              className="rounded-xl p-3 mr-4"
+              style={{ backgroundColor: action.color + '20' }}
             >
-              <View style={{
-                width: 56,
-                height: 56,
-                borderRadius: RADIUS.md,
-                backgroundColor: action.color + '15',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: SPACING.sm,
-              }}>
-                <Ionicons name={action.icon} size={28} color={action.color} />
-              </View>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: isDark ? COLORS.dark.text : COLORS.light.text, textAlign: 'center' }}>
-                {action.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+              <Ionicons name={action.icon} size={24} color={action.color} />
+            </View>
+            <View className="flex-1">
+              <Text className="text-white text-base font-semibold">{action.label}</Text>
+              <Text className="text-[#64748b] text-sm mt-0.5">{action.sublabel}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.dark.textMuted} />
+          </Pressable>
+        ))}
       </ScrollView>
     </SafeAreaView>
   );

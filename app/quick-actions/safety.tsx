@@ -1,99 +1,195 @@
-import { View, Text, TextInput, Pressable, Alert, ScrollView, useColorScheme } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, ScrollView, TextInput, Pressable, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, SPACING, RADIUS } from '../../constants/theme';
+import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '@/constants/theme';
+import { Button } from '@/components/ui/Button';
+import { useProjectsStore } from '@/stores/projectsStore';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSafetyStore } from '@/stores/safetyStore';
 
-export default function QuickSafetyScreen() {
+const SEVERITIES = [
+  { value: 'low' as const, label: 'Low', color: '#22c55e' },
+  { value: 'medium' as const, label: 'Medium', color: '#eab308' },
+  { value: 'high' as const, label: 'High', color: '#f97316' },
+  { value: 'critical' as const, label: 'Critical', color: '#ef4444' },
+];
+
+const OBSERVATION_TYPES = ['Hazard', 'Near Miss', 'Good Practice', 'PPE Issue', 'Housekeeping'];
+
+export default function SafetyObservationScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ observation: '', severity: 'low' });
+  const { user } = useAuth();
+  const { projects } = useProjectsStore();
+  const { addIncident } = useSafetyStore();
 
-  const handleSubmit = async () => {
-    if (!form.observation) {
-      Alert.alert('Error', 'Please describe the safety observation');
+  const [projectId, setProjectId] = useState<string>('');
+  const [severity, setSeverity] = useState<string>('medium');
+  const [obsType, setObsType] = useState<string>('Hazard');
+  const [description, setDescription] = useState('');
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const now = new Date().toLocaleString('en-GB', {
+    day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+
+  const handleSubmit = useCallback(async () => {
+    if (!description.trim()) {
+      Alert.alert('Required', 'Please describe the observation');
       return;
     }
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      Alert.alert('Recorded', 'Safety observation captured');
-      router.back();
-    }, 800);
-  };
+    setSubmitting(true);
+    try {
+      await addIncident({
+        title: `${obsType}: ${description.slice(0, 60)}`,
+        description: description.trim(),
+        severity: severity as 'low' | 'medium' | 'high' | 'critical',
+        projectId: projectId || undefined,
+        projectName: projects.find((p) => p.id === projectId)?.name || 'No Project',
+        date: new Date().toISOString(),
+        injuries: 0,
+        witnesses: [],
+        reportedBy: user?.email || 'Unknown',
+      });
+      Alert.alert('Saved', 'Safety observation logged', [
+        { text: 'Done', onPress: () => router.back() },
+      ]);
+    } catch {
+      Alert.alert('Error', 'Failed to log observation');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [description, severity, obsType, projectId, projects, user, addIncident, router]);
 
-  const inputStyle = {
-    borderWidth: 1,
-    borderColor: isDark ? COLORS.dark.border : COLORS.light.border,
+  const inputBase = {
+    backgroundColor: COLORS.dark.surface,
     borderRadius: RADIUS.md,
-    padding: SPACING.sm,
-    color: isDark ? COLORS.dark.text : COLORS.light.text,
-    backgroundColor: isDark ? COLORS.dark.surface : COLORS.light.surface,
-    marginBottom: SPACING.md,
+    padding: SPACING.md,
+    color: COLORS.dark.text,
+    fontSize: TYPOGRAPHY.body.fontSize,
+    borderWidth: 1,
+    borderColor: COLORS.dark.border,
   };
-
-  const labelStyle = { fontSize: 14, fontWeight: '500' as const, color: isDark ? COLORS.dark.text : COLORS.light.text, marginBottom: 4 };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? COLORS.dark.background : COLORS.light.background }} edges={['top']}>
-      <View style={{ padding: SPACING.md }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
-          <Pressable onPress={() => router.back()} style={{ marginRight: SPACING.sm }}>
-            <Ionicons name="arrow-back" size={24} color={isDark ? COLORS.dark.text : COLORS.light.text} />
-          </Pressable>
-          <Text style={{ fontSize: 20, fontWeight: '700', color: isDark ? COLORS.dark.text : COLORS.light.text }}>Safety Observation</Text>
+    <SafeAreaView className="flex-1 bg-[#0f172a]" edges={['top']}>
+      <View className="px-4 pt-2 pb-3 flex-row items-center">
+        <Pressable onPress={() => router.back()} className="mr-3">
+          <Ionicons name="close-outline" size={28} color={COLORS.dark.textMuted} />
+        </Pressable>
+        <Text className="text-white text-lg font-bold flex-1 text-center mr-11">Safety Observation</Text>
+      </View>
+
+      <ScrollView contentContainerStyle={{ padding: SPACING.md, paddingBottom: SPACING.xl }}>
+        {/* Meta */}
+        <View className="mb-4 flex-row items-center">
+          <Ionicons name="time-outline" size={14} color={COLORS.dark.textMuted} />
+          <Text className="text-[#64748b] text-xs ml-1.5">{now}</Text>
+          <Text className="text-[#64748b] text-xs mx-2">·</Text>
+          <Ionicons name="person-outline" size={14} color={COLORS.dark.textMuted} />
+          <Text className="text-[#64748b] text-xs ml-1.5">
+            {user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'User'}
+          </Text>
         </View>
 
-        <ScrollView>
-          <Text style={labelStyle}>Severity</Text>
-          <View style={{ flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.md }}>
-            {['low', 'medium', 'high', 'critical'].map((s) => (
+        {/* Project */}
+        <Text className="text-[#94a3b8] text-xs font-semibold mb-2 uppercase tracking-wide">Project</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
+          <View className="flex-row gap-2">
+            <Pressable
+              onPress={() => setProjectId('')}
+              className={`px-4 py-2 rounded-xl border ${projectId === '' ? 'border-[#eab308] bg-[#eab308]/10' : 'border-[#334155] bg-[#1e293b]'}`}
+            >
+              <Text className={projectId === '' ? 'text-[#eab308] font-semibold' : 'text-[#64748b]'}>None</Text>
+            </Pressable>
+            {projects.map((p) => (
               <Pressable
-                key={s}
-                onPress={() => setForm((p) => ({ ...p, severity: s }))}
-                style={{
-                  flex: 1,
-                  padding: SPACING.sm,
-                  borderRadius: RADIUS.md,
-                  backgroundColor: form.severity === s ? COLORS.success + '20' : isDark ? COLORS.dark.surface : COLORS.light.surface,
-                  borderWidth: 1,
-                  borderColor: form.severity === s ? COLORS.success : isDark ? COLORS.dark.border : COLORS.light.border,
-                  alignItems: 'center',
-                }}
+                key={p.id}
+                onPress={() => setProjectId(p.id)}
+                className={`px-4 py-2 rounded-xl border ${projectId === p.id ? 'border-[#eab308] bg-[#eab308]/10' : 'border-[#334155] bg-[#1e293b]'}`}
               >
-                <Text style={{ fontSize: 12, fontWeight: '600', color: form.severity === s ? COLORS.success : isDark ? COLORS.dark.text : COLORS.light.text, textTransform: 'capitalize' }}>{s}</Text>
+                <Text className={projectId === p.id ? 'text-[#eab308] font-semibold' : 'text-[#64748b]'} numberOfLines={1}>
+                  {p.name}
+                </Text>
               </Pressable>
             ))}
           </View>
-
-          <Text style={labelStyle}>Observation *</Text>
-          <TextInput
-            style={[inputStyle, { height: 100, textAlignVertical: 'top' }]}
-            multiline
-            value={form.observation}
-            onChangeText={(v) => setForm((p) => ({ ...p, observation: v }))}
-            placeholder="Describe what you observed..."
-            placeholderTextColor={isDark ? COLORS.dark.textMuted : COLORS.light.textMuted}
-          />
-
-          <Pressable
-            onPress={handleSubmit}
-            disabled={loading}
-            style={{
-              backgroundColor: COLORS.success,
-              padding: SPACING.md,
-              borderRadius: RADIUS.md,
-              alignItems: 'center',
-              opacity: loading ? 0.6 : 1,
-            }}
-          >
-            <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>{loading ? 'Saving...' : 'Record Safety Observation'}</Text>
-          </Pressable>
         </ScrollView>
-      </View>
+
+        {/* Observation type */}
+        <Text className="text-[#94a3b8] text-xs font-semibold mb-2 uppercase tracking-wide">Type</Text>
+        <View className="flex-row flex-wrap gap-2 mb-4">
+          {OBSERVATION_TYPES.map((t) => (
+            <Pressable
+              key={t}
+              onPress={() => setObsType(t)}
+              className={`px-3 py-2 rounded-xl border ${obsType === t ? 'border-[#eab308] bg-[#eab308]/10' : 'border-[#334155] bg-[#1e293b]'}`}
+            >
+              <Text className={`text-sm font-semibold ${obsType === t ? 'text-[#eab308]' : 'text-[#64748b]'}`}>{t}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Severity */}
+        <Text className="text-[#94a3b8] text-xs font-semibold mb-2 uppercase tracking-wide">Severity</Text>
+        <View className="flex-row gap-2 mb-4">
+          {SEVERITIES.map((s) => (
+            <Pressable
+              key={s.value}
+              onPress={() => setSeverity(s.value)}
+              className={`flex-1 py-2.5 rounded-xl border items-center ${severity === s.value ? 'bg-opacity-10' : 'bg-[#1e293b] border-[#334155]'}`}
+              style={severity === s.value ? { backgroundColor: s.color + '18', borderColor: s.color } : undefined}
+            >
+              <Text className="text-xs font-semibold" style={{ color: severity === s.value ? s.color : COLORS.dark.textMuted }}>
+                {s.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Description */}
+        <Text className="text-[#94a3b8] text-xs font-semibold mb-2 uppercase tracking-wide">Description *</Text>
+        <TextInput
+          style={[inputBase, { height: 120, textAlignVertical: 'top' }]}
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Describe what you observed..."
+          placeholderTextColor={COLORS.dark.textMuted}
+          multiline
+          autoFocus
+        />
+
+        {/* Photo */}
+        <Text className="text-[#94a3b8] text-xs font-semibold mt-4 mb-2 uppercase tracking-wide">Photo</Text>
+        <Pressable
+          onPress={() => setPhotoUri(photoUri ? null : 'placeholder')}
+          className="bg-[#1e293b] border border-dashed border-[#334155] rounded-xl p-6 items-center justify-center"
+        >
+          {photoUri ? (
+            <View className="flex-row items-center">
+              <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+              <Text className="text-[#22c55e] ml-2 text-sm font-semibold">Photo attached</Text>
+            </View>
+          ) : (
+            <>
+              <Ionicons name="camera-outline" size={28} color={COLORS.dark.textMuted} />
+              <Text className="text-[#64748b] text-sm mt-2">Tap to add photo</Text>
+            </>
+          )}
+        </Pressable>
+
+        <Button
+          title="Log Observation"
+          onPress={handleSubmit}
+          loading={submitting}
+          variant="primary"
+          style={{ marginTop: SPACING.lg }}
+          iconLeft="warning"
+        />
+      </ScrollView>
     </SafeAreaView>
   );
 }

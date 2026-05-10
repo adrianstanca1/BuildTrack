@@ -85,6 +85,7 @@ export default function RootLayout() {
               <Stack.Screen name="timesheets" />
               <Stack.Screen name="settings" />
               <Stack.Screen name="(admin)" />
+              <Stack.Screen name="quick-actions" />
             </Stack>
           </AuthGuard>
         </AuthProvider>

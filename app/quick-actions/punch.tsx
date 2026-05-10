@@ -1,109 +1,203 @@
-import { View, Text, TextInput, Pressable, Alert, ScrollView, useColorScheme } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, ScrollView, TextInput, Pressable, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useProjectsStore } from '../../stores/projectsStore';
-import { COLORS, SPACING, RADIUS } from '../../constants/theme';
+import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '@/constants/theme';
+import { Button } from '@/components/ui/Button';
+import { useProjectsStore } from '@/stores/projectsStore';
+import { useAuth } from '@/contexts/AuthContext';
+import apiClient from '@/services/api';
 
-export default function QuickPunchScreen() {
+const SEVERITIES = [
+  { value: 'cosmetic' as const, label: 'Cosmetic', color: '#22c55e' },
+  { value: 'minor' as const, label: 'Minor', color: '#f59e0b' },
+  { value: 'major' as const, label: 'Major', color: '#f97316' },
+  { value: 'critical' as const, label: 'Critical', color: '#ef4444' },
+];
+
+export default function PunchItemScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { user } = useAuth();
   const { projects } = useProjectsStore();
-  const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
-    projectId: '',
-    title: '',
-    location: '',
-    severity: 'medium',
-    assignee: '',
+
+  const [title, setTitle] = useState('');
+  const [location, setLocation] = useState('');
+  const [severity, setSeverity] = useState<string>('minor');
+  const [projectId, setProjectId] = useState<string>('');
+  const [assignee, setAssignee] = useState('');
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const now = new Date().toLocaleString('en-GB', {
+    day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
   });
 
-  const handleSubmit = async () => {
-    if (!form.projectId || !form.title) {
-      Alert.alert('Error', 'Project and title are required');
+  const handleSubmit = useCallback(async () => {
+    if (!title.trim()) {
+      Alert.alert('Required', 'Please enter a punch item title');
       return;
     }
-    setLoading(true);
-    // TODO: call API
-    setTimeout(() => {
-      setLoading(false);
-      Alert.alert('Created', 'Punch item recorded');
-      router.back();
-    }, 800);
-  };
+    setSubmitting(true);
+    try {
+      await apiClient.createPunchItem({
+        projectId: projectId || undefined,
+        title: title.trim(),
+        location: location.trim() || undefined,
+        severity: severity as any,
+        assignee: assignee.trim() || undefined,
+        photoUrls: photoUri ? [photoUri] : undefined,
+      });
+      Alert.alert('Saved', 'Punch item logged', [
+        { text: 'Done', onPress: () => router.back() },
+      ]);
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to save punch item');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [title, location, severity, projectId, assignee, photoUri, router]);
 
-  const inputStyle = {
-    borderWidth: 1,
-    borderColor: isDark ? COLORS.dark.border : COLORS.light.border,
+  const inputBase = {
+    backgroundColor: COLORS.dark.surface,
     borderRadius: RADIUS.md,
-    padding: SPACING.sm,
-    color: isDark ? COLORS.dark.text : COLORS.light.text,
-    backgroundColor: isDark ? COLORS.dark.surface : COLORS.light.surface,
-    marginBottom: SPACING.md,
+    padding: SPACING.md,
+    color: COLORS.dark.text,
+    fontSize: TYPOGRAPHY.body.fontSize,
+    borderWidth: 1,
+    borderColor: COLORS.dark.border,
   };
-
-  const labelStyle = { fontSize: 14, fontWeight: '500' as const, color: isDark ? COLORS.dark.text : COLORS.light.text, marginBottom: 4 };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? COLORS.dark.background : COLORS.light.background }} edges={['top']}>
-      <View style={{ padding: SPACING.md }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
-          <Pressable onPress={() => router.back()} style={{ marginRight: SPACING.sm }}>
-            <Ionicons name="arrow-back" size={24} color={isDark ? COLORS.dark.text : COLORS.light.text} />
-          </Pressable>
-          <Text style={{ fontSize: 20, fontWeight: '700', color: isDark ? COLORS.dark.text : COLORS.light.text }}>Quick Punch</Text>
+    <SafeAreaView className="flex-1 bg-[#0f172a]" edges={['top']}>
+      <View className="px-4 pt-2 pb-3 flex-row items-center">
+        <Pressable onPress={() => router.back()} className="mr-3">
+          <Ionicons name="close-outline" size={28} color={COLORS.dark.textMuted} />
+        </Pressable>
+        <Text className="text-white text-lg font-bold flex-1 text-center mr-11">Punch Item</Text>
+      </View>
+
+      <ScrollView contentContainerStyle={{ padding: SPACING.md, paddingBottom: SPACING.xl }}>
+        {/* Meta */}
+        <View className="mb-4 flex-row items-center">
+          <Ionicons name="time-outline" size={14} color={COLORS.dark.textMuted} />
+          <Text className="text-[#64748b] text-xs ml-1.5">{now}</Text>
+          <Text className="text-[#64748b] text-xs mx-2">·</Text>
+          <Ionicons name="person-outline" size={14} color={COLORS.dark.textMuted} />
+          <Text className="text-[#64748b] text-xs ml-1.5">
+            {user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'User'}
+          </Text>
         </View>
 
-        <ScrollView>
-          <Text style={labelStyle}>Project *</Text>
-          <View style={inputStyle}>
-            <Text style={{ color: isDark ? COLORS.dark.textMuted : COLORS.light.textMuted }}>Select project...</Text>
-          </View>
-
-          <Text style={labelStyle}>Title *</Text>
-          <TextInput style={inputStyle} value={form.title} onChangeText={(v) => setForm((p) => ({ ...p, title: v }))} placeholder="e.g. Cracked tile in lobby" placeholderTextColor={isDark ? COLORS.dark.textMuted : COLORS.light.textMuted} />
-
-          <Text style={labelStyle}>Location</Text>
-          <TextInput style={inputStyle} value={form.location} onChangeText={(v) => setForm((p) => ({ ...p, location: v }))} placeholder="e.g. Level 2, West Wing" placeholderTextColor={isDark ? COLORS.dark.textMuted : COLORS.light.textMuted} />
-
-          <Text style={labelStyle}>Severity</Text>
-          <View style={{ flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.lg }}>
-            {['low', 'medium', 'high', 'critical'].map((s) => (
+        {/* Project picker */}
+        <Text className="text-[#94a3b8] text-xs font-semibold mb-2 uppercase tracking-wide">Project</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
+          <View className="flex-row gap-2">
+            <Pressable
+              onPress={() => setProjectId('')}
+              className={`px-4 py-2 rounded-xl border ${projectId === '' ? 'border-[#3b82f6] bg-[#3b82f6]/10' : 'border-[#334155] bg-[#1e293b]'}`}
+            >
+              <Text className={projectId === '' ? 'text-[#3b82f6] font-semibold' : 'text-[#64748b]'}>None</Text>
+            </Pressable>
+            {projects.map((p) => (
               <Pressable
-                key={s}
-                onPress={() => setForm((p) => ({ ...p, severity: s }))}
-                style={{
-                  flex: 1,
-                  padding: SPACING.sm,
-                  borderRadius: RADIUS.md,
-                  backgroundColor: form.severity === s ? COLORS.danger + '20' : isDark ? COLORS.dark.surface : COLORS.light.surface,
-                  borderWidth: 1,
-                  borderColor: form.severity === s ? COLORS.danger : isDark ? COLORS.dark.border : COLORS.light.border,
-                  alignItems: 'center',
-                }}
+                key={p.id}
+                onPress={() => setProjectId(p.id)}
+                className={`px-4 py-2 rounded-xl border ${projectId === p.id ? 'border-[#3b82f6] bg-[#3b82f6]/10' : 'border-[#334155] bg-[#1e293b]'}`}
               >
-                <Text style={{ fontSize: 12, fontWeight: '600', color: form.severity === s ? COLORS.danger : isDark ? COLORS.dark.text : COLORS.light.text, textTransform: 'capitalize' }}>{s}</Text>
+                <Text className={projectId === p.id ? 'text-[#3b82f6] font-semibold' : 'text-[#64748b]'} numberOfLines={1}>
+                  {p.name}
+                </Text>
               </Pressable>
             ))}
           </View>
-
-          <Pressable
-            onPress={handleSubmit}
-            disabled={loading}
-            style={{
-              backgroundColor: COLORS.danger,
-              padding: SPACING.md,
-              borderRadius: RADIUS.md,
-              alignItems: 'center',
-              opacity: loading ? 0.6 : 1,
-            }}
-          >
-            <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>{loading ? 'Creating...' : 'Create Punch Item'}</Text>
-          </Pressable>
         </ScrollView>
-      </View>
+
+        {/* Title */}
+        <Text className="text-[#94a3b8] text-xs font-semibold mb-2 uppercase tracking-wide">Title *</Text>
+        <TextInput
+          style={inputBase}
+          value={title}
+          onChangeText={setTitle}
+          placeholder="What needs fixing?"
+          placeholderTextColor={COLORS.dark.textMuted}
+          autoFocus
+        />
+
+        {/* Location */}
+        <Text className="text-[#94a3b8] text-xs font-semibold mt-4 mb-2 uppercase tracking-wide">Location</Text>
+        <View className="flex-row items-center" style={[inputBase, { padding: 0 }]}>
+          <Ionicons name="location-outline" size={16} color={COLORS.dark.textMuted} style={{ marginLeft: SPACING.md, marginRight: SPACING.sm }} />
+          <TextInput
+            className="flex-1 text-white py-3 pr-3"
+            style={{ fontSize: TYPOGRAPHY.body.fontSize }}
+            value={location}
+            onChangeText={setLocation}
+            placeholder="Where on site?"
+            placeholderTextColor={COLORS.dark.textMuted}
+          />
+        </View>
+
+        {/* Severity */}
+        <Text className="text-[#94a3b8] text-xs font-semibold mt-4 mb-2 uppercase tracking-wide">Severity</Text>
+        <View className="flex-row gap-2 mb-2">
+          {SEVERITIES.map((s) => (
+            <Pressable
+              key={s.value}
+              onPress={() => setSeverity(s.value)}
+              className={`flex-1 py-2.5 rounded-xl border items-center ${severity === s.value ? 'bg-opacity-10' : 'bg-[#1e293b] border-[#334155]'}`}
+              style={severity === s.value ? { backgroundColor: s.color + '18', borderColor: s.color } : undefined}
+            >
+              <Text className="text-xs font-semibold" style={{ color: severity === s.value ? s.color : COLORS.dark.textMuted }}>
+                {s.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Assignee */}
+        <Text className="text-[#94a3b8] text-xs font-semibold mt-4 mb-2 uppercase tracking-wide">Assignee</Text>
+        <View className="flex-row items-center" style={[inputBase, { padding: 0 }]}>
+          <Ionicons name="person-outline" size={16} color={COLORS.dark.textMuted} style={{ marginLeft: SPACING.md, marginRight: SPACING.sm }} />
+          <TextInput
+            className="flex-1 text-white py-3 pr-3"
+            style={{ fontSize: TYPOGRAPHY.body.fontSize }}
+            value={assignee}
+            onChangeText={setAssignee}
+            placeholder="Who should fix this?"
+            placeholderTextColor={COLORS.dark.textMuted}
+          />
+        </View>
+
+        {/* Photo */}
+        <Text className="text-[#94a3b8] text-xs font-semibold mt-4 mb-2 uppercase tracking-wide">Photo</Text>
+        <Pressable
+          onPress={() => setPhotoUri(photoUri ? null : 'placeholder')}
+          className="bg-[#1e293b] border border-dashed border-[#334155] rounded-xl p-6 items-center justify-center"
+        >
+          {photoUri ? (
+            <View className="flex-row items-center">
+              <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+              <Text className="text-[#22c55e] ml-2 text-sm font-semibold">Photo attached</Text>
+            </View>
+          ) : (
+            <>
+              <Ionicons name="camera-outline" size={28} color={COLORS.dark.textMuted} />
+              <Text className="text-[#64748b] text-sm mt-2">Tap to add photo</Text>
+            </>
+          )}
+        </Pressable>
+
+        <Button
+          title="Log Punch Item"
+          onPress={handleSubmit}
+          loading={submitting}
+          variant="primary"
+          style={{ marginTop: SPACING.lg }}
+          iconLeft="add-circle"
+        />
+      </ScrollView>
     </SafeAreaView>
   );
 }
