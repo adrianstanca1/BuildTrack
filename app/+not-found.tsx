@@ -8,7 +8,7 @@ export default function NotFoundScreen() {
       <Ionicons name="alert-circle-outline" size={64} color="#9ca3af" />
       <Text className="text-2xl font-bold text-gray-900 dark:text-white mt-4">Page Not Found</Text>
       <Text className="text-gray-500 dark:text-gray-400 mt-2 text-center">
-        The screen you're looking for doesn't exist.
+        The screen you&apos;re looking for doesn&apos;t exist.
       </Text>
       <Link href="/" asChild>
         <Pressable className="mt-6 bg-blue-600 px-6 py-3 rounded-xl">

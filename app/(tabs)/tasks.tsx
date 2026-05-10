@@ -88,7 +88,7 @@ export default function TasksScreen() {
           ListEmptyComponent={
             <View className="items-center py-12">
               <Ionicons name="list-outline" size={48} color={colors.gray} />
-              <Text className="text-gray-500 mt-4 text-center">No tasks yet.{'\n'}Tap "New" to create one.</Text>
+              <Text className="text-gray-500 mt-4 text-center">No tasks yet.{'\n'}Tap &quot;New&quot; to create one.</Text>
             </View>
           }
         />

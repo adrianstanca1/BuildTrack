@@ -136,21 +136,21 @@ async function applyMutation(mutation: SyncMutation): Promise<SyncResult> {
   try {
     switch (type) {
       case 'insert': {
-        const { error } = await supabase.from(table).insert(payload);
+        const { error } = await supabase.from(table as any).insert(payload);
         if (error) throw error;
         break;
       }
       case 'update': {
         const id = payload.id as string | number;
         if (!id) throw new Error('Update payload missing id');
-        const { error } = await supabase.from(table).update(payload).eq('id', id);
+        const { error } = await supabase.from(table as any).update(payload).eq('id', id);
         if (error) throw error;
         break;
       }
       case 'delete': {
         const id = payload.id as string | number;
         if (!id) throw new Error('Delete payload missing id');
-        const { error } = await supabase.from(table).delete().eq('id', id);
+        const { error } = await supabase.from(table as any).delete().eq('id', id);
         if (error) throw error;
         break;
       }

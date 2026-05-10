@@ -20,7 +20,7 @@ export function useSupabaseQuery<T>(
     
     setLoading(true);
     let query = supabase
-      .from(table)
+      .from(table as any)
       .select(options?.select || '*');
 
     if (options?.eq) {
@@ -54,7 +54,7 @@ export function useSupabaseQuery<T>(
     const channel = supabase
       .channel(`${table}_changes`)
       .on('postgres_changes', 
-        { event: '*', schema: 'public', table },
+        { event: '*', schema: 'public', table: table as any },
         () => {
           fetch();
         }
@@ -76,7 +76,7 @@ export function useSupabaseMutation<T>(table: string) {
     if (!user) throw new Error('Not authenticated');
     
     const { data: result, error } = await supabase
-      .from(table)
+      .from(table as any)
       .insert({ ...(data as any), user_id: user.id })
       .select()
       .single();
@@ -89,7 +89,7 @@ export function useSupabaseMutation<T>(table: string) {
     if (!user) throw new Error('Not authenticated');
 
     const { data: result, error } = await supabase
-      .from(table)
+      .from(table as any)
       .update(data as any)
       .eq('id', id)
       .select()
@@ -103,7 +103,7 @@ export function useSupabaseMutation<T>(table: string) {
     if (!user) throw new Error('Not authenticated');
 
     const { error } = await supabase
-      .from(table)
+      .from(table as any)
       .delete()
       .eq('id', id);
 
