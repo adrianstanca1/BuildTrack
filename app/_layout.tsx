@@ -80,6 +80,9 @@ export default function RootLayout() {
                 name="(modals)/worker-details"
                 options={{ presentation: 'modal' }}
               />
+              <Stack.Screen name="defects" />
+              <Stack.Screen name="permits" />
+              <Stack.Screen name="timesheets" />
               <Stack.Screen name="settings" />
               <Stack.Screen name="(admin)" />
             </Stack>
