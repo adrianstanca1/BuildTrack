@@ -7,7 +7,7 @@ import { useTasks } from '@/hooks/useTasks';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useIncidents } from '@/hooks/useSafety';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '@/constants/theme';
-import { Building2, ClipboardList, AlertTriangle, Users, Bell, TrendingUp, ArrowRight, ShieldAlert, Bug, FileText, Clock } from 'lucide-react-native';
+import { Building2, ClipboardList, AlertTriangle, Users, Bell, TrendingUp, ArrowRight, ShieldAlert, Bug, FileText, Clock, Zap } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { BarChart } from '@/components/charts/BarChart';
 import { DonutChart } from '@/components/charts/DonutChart';
@@ -217,6 +217,26 @@ export default function DashboardScreen() {
         {/* Quick Actions */}
         <View>
           <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.dark.text, marginBottom: SPACING.md }}>Quick Actions</Text>
+          <TouchableOpacity
+            onPress={() => router.push('/quick-actions')}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: COLORS.primary[600],
+              borderRadius: RADIUS.lg,
+              padding: SPACING.md,
+              marginBottom: SPACING.md,
+            }}
+          >
+            <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: RADIUS.md, padding: SPACING.sm, marginRight: SPACING.md }}>
+              <Zap size={20} color="#ffffff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>Quick Actions Hub</Text>
+              <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 1 }}>Punch, photo, delay, safety, RFI — fast</Text>
+            </View>
+            <ArrowRight size={18} color="rgba(255,255,255,0.75)" />
+          </TouchableOpacity>
           <QuickAction icon={Building2} label="New Project" color={COLORS.dark.primary} onPress={() => router.push('/project/create')} />
           <QuickAction icon={ClipboardList} label="Add Task" color={COLORS.dark.accent} onPress={() => router.push('/task/create')} />
           <QuickAction icon={AlertTriangle} label="Report Incident" color={COLORS.dark.danger} onPress={() => router.push('/safety/report')} />
