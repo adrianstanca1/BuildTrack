@@ -19,6 +19,9 @@ export type DelayNoteStatus = 'open' | 'resolved' | 'closed';
 export type MeetingType = 'safety_toolbox' | 'standup' | 'client_walkthrough' | 'change_order' | 'quality_review' | 'progress_review' | 'closeout' | 'other';
 export type MeetingStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 
+export type ChangeOrderType = 'scope' | 'price' | 'time' | 'design' | 'other';
+export type ChangeOrderStatus = 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'withdrawn';
+
 export type PurchaseOrderStatus = 'draft' | 'sent' | 'acknowledged' | 'partially_delivered' | 'delivered' | 'invoiced' | 'paid' | 'cancelled';
 
 export type EquipmentType = 'excavator' | 'bulldozer' | 'crane' | 'loader' | 'dump_truck' | 'mixer' | 'generator' | 'scaffold' | 'scissor_lift' | 'forklift' | 'compactor' | 'other';
@@ -224,6 +227,33 @@ export interface Meeting {
   notes?: string;
   status: MeetingStatus;
   attendees: MeetingAttendee[];
+  createdAt: string;
+}
+
+export interface ChangeOrder {
+  id: string;
+  projectId?: string;
+  projectName: string;
+  coNumber: string;
+  title: string;
+  description?: string;
+  reason?: string;
+  type: ChangeOrderType;
+  status: ChangeOrderStatus;
+  requestedBy?: string;
+  requestedById?: string;
+  requestedDate?: string;
+  originalCost: number;
+  proposedCost: number;
+  originalScheduleDays: number;
+  proposedScheduleDays: number;
+  impactCost?: number;
+  impactDays?: number;
+  reviewedBy?: string;
+  approvedBy?: string;
+  reviewedDate?: string;
+  approvedDate?: string;
+  notes?: string;
   createdAt: string;
 }
 
