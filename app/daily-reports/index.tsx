@@ -1,4 +1,4 @@
-import { View, Text, FlatList, Pressable, RefreshControl, useColorScheme } from 'react-native';
+import { View, Text, TextInput, FlatList, Pressable, RefreshControl, useColorScheme } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useCallback } from 'react';
@@ -30,7 +30,7 @@ export default function DailyReportsScreen() {
       case 'draft': return COLORS.warning;
       case 'submitted': return COLORS.info;
       case 'approved': return COLORS.success;
-      default: return COLORS.gray;
+      default: return COLORS.primary[400];
     }
   };
 
