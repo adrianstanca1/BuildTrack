@@ -24,6 +24,8 @@ export type PurchaseOrderStatus = 'draft' | 'sent' | 'acknowledged' | 'partially
 export type EquipmentType = 'excavator' | 'bulldozer' | 'crane' | 'loader' | 'dump_truck' | 'mixer' | 'generator' | 'scaffold' | 'scissor_lift' | 'forklift' | 'compactor' | 'other';
 export type EquipmentStatus = 'available' | 'rented' | 'on_site' | 'under_maintenance' | 'out_of_service' | 'retired';
 
+export type MaterialCategory = 'concrete' | 'steel' | 'timber' | 'brick' | 'block' | 'insulation' | 'roofing' | 'electrical' | 'plumbing' | 'paint' | 'hardware' | 'aggregate' | 'other';
+
 export interface PurchaseOrderItem {
   description: string;
   quantity: number;
@@ -242,6 +244,24 @@ export interface Equipment {
   purchaseDate?: string;
   insuranceExpiry?: string;
   motExpiry?: string;
+  location?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface Material {
+  id: string;
+  projectId?: string;
+  projectName: string;
+  name: string;
+  category: MaterialCategory;
+  unit: string;
+  unitCost: number;
+  quantityOnHand: number;
+  quantityOrdered: number;
+  reorderLevel: number;
+  reorderQuantity: number;
+  supplierName?: string;
   location?: string;
   notes?: string;
   createdAt: string;
