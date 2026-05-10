@@ -70,6 +70,13 @@
         ],
         "listUnknownPackages": false
       }
+    },
+    "install": {
+      "exclude": [
+        "react",
+        "react-dom",
+        "react-native-svg"
+      ]
     }
   },
   "engines": {
