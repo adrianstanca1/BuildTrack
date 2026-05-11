@@ -3,11 +3,12 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
+  Text,
   useColorScheme,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-
+import { COLORS } from "@/constants/theme";
 
 interface MenuItem {
   icon: keyof typeof Ionicons.glyphMap;
@@ -39,66 +40,68 @@ export default function MoreScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const textColor = isDark ? COLORS.dark.text : COLORS.light.text;
+  const mutedColor = isDark ? COLORS.dark.textMuted : COLORS.light.textMuted;
+  const cardBg = isDark ? COLORS.dark.card : COLORS.light.card;
+  const iconBg = isDark ? "#1e3a5f" : "#eff6ff";
+  const iconColor = isDark ? "#60a5fa" : "#2563eb";
 
   return (
-    <ScrollView
-      className="flex-1"
-      style={{ backgroundColor: isDark ? "#111827" : "#f3f4f6" }}
-    >
-      <View className="px-4 pt-6 pb-4">
-        <Text variant="h2" className="text-2xl font-bold mb-1">
-          More
-        </Text>
-        <Text className="text-sm text-gray-500">
-          {FEATURES.length} features
-        </Text>
+    <ScrollView style={{ flex: 1, backgroundColor: isDark ? "#111827" : "#f3f4f6" }}>
+      <View style={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 16 }}>
+        <Text style={{ fontSize: 28, fontWeight: "700", color: textColor, marginBottom: 4 }}>More</Text>
+        <Text style={{ fontSize: 14, color: mutedColor }}>{FEATURES.length} features</Text>
       </View>
 
-      <View className="px-4">
+      <View style={{ paddingHorizontal: 16, paddingBottom: 24 }}>
         {FEATURES.map((item) => (
           <TouchableOpacity
             key={item.route}
-            className="flex-row items-center mb-3 p-4 rounded-xl"
+            onPress={() => router.push(item.route)}
             style={{
-              backgroundColor: isDark ? "#1f2937" : "#ffffff",
+              flexDirection: "row",
+              alignItems: "center",
+              padding: 16,
+              borderRadius: 12,
+              backgroundColor: cardBg,
+              marginBottom: 12,
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.1,
+              shadowOpacity: 0.08,
               shadowRadius: 2,
               elevation: 2,
             }}
-            onPress={() => router.push(item.route)}
           >
-            <View
-              className="w-10 h-10 rounded-lg items-center justify-center mr-3"
-              style={{
-                backgroundColor: item.color || (isDark ? "#374151" : "#eff6ff"),
-              }}
-            >
-              <Ionicons
-                name={item.icon}
-                size={20}
-                color={item.color ? "#ffffff" : isDark ? "#60a5fa" : "#2563eb"}
-              />
+            <View style={{
+              width: 40,
+              height: 40,
+              borderRadius: 10,
+              backgroundColor: iconBg,
+              alignItems: "center",
+              justifyContent: "center",
+              marginRight: 12,
+            }}>
+              <Ionicons name={item.icon} size={20} color={iconColor} />
             </View>
 
-            <View className="flex-1">
-              <Text className="font-semibold text-base">{item.label}</Text>
-            </View>
+            <Text style={{ flex: 1, fontSize: 16, fontWeight: "600", color: textColor }}>{item.label}</Text>
 
-            <View className="flex-row items-center">
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
               {item.badge != null && item.badge > 0 && (
-                <View className="bg-red-500 rounded-full min-w-[20px] h-5 items-center justify-center mr-2 px-1">
-                  <Text className="text-white text-xs font-bold">
-                    {item.badge > 99 ? "99+" : item.badge}
-                  </Text>
+                <View style={{
+                  backgroundColor: "#ef4444",
+                  borderRadius: 10,
+                  minWidth: 20,
+                  height: 20,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 8,
+                  paddingHorizontal: 4,
+                }}>
+                  <Text style={{ color: "#fff", fontSize: 11, fontWeight: "700" }}>{item.badge > 99 ? "99+" : item.badge}</Text>
                 </View>
               )}
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={isDark ? "#6b7280" : "#9ca3af"}
-              />
+              <Ionicons name="chevron-forward" size={20} color={mutedColor} />
             </View>
           </TouchableOpacity>
         ))}
