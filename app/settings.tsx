@@ -133,7 +133,7 @@ export default function SettingsScreen() {
           label: 'Export Data',
           color: colors.info,
           type: 'button' as const,
-          onPress: () => Alert.alert('Coming Soon', 'Data export will be available in a future update.'),
+          onPress: () => router.push('/export'),
         },
       ],
     },
