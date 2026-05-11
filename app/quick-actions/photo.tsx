@@ -1,13 +1,13 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, Alert } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, Alert, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '@/constants/theme';
-import { Button } from '@/components/ui/Button';
 import { useProjectsStore } from '@/stores/projectsStore';
+import { useSitePhotosStore } from '@/stores/sitePhotosStore';
 import { useAuth } from '@/contexts/AuthContext';
-import apiClient from '@/services/api';
 
 const TAGS = ['Progress', 'Issue', 'Before', 'After', 'Safety', 'Quality', 'Delivery'];
 
@@ -34,6 +34,20 @@ export default function QuickPhotoScreen() {
     );
   }, []);
 
+  const pickImage = useCallback(async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") { Alert.alert("Permission needed", "Allow photo library access."); return; }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [4, 3], quality: 0.8 });
+    if (!result.canceled) setPhotoUri(result.assets[0].uri);
+  }, []);
+
+  const takePhoto = useCallback(async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") { Alert.alert("Permission needed", "Allow camera access."); return; }
+    const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.8 });
+    if (!result.canceled) setPhotoUri(result.assets[0].uri);
+  }, []);
+
   const handleSubmit = useCallback(async () => {
     if (!photoUri) {
       Alert.alert('Required', 'Please add a photo');
@@ -41,12 +55,14 @@ export default function QuickPhotoScreen() {
     }
     setSubmitting(true);
     try {
-      await apiClient.createSitePhoto({
+      await useSitePhotosStore.getState().createSitePhoto({
         projectId: projectId || undefined,
         location: location.trim() || undefined,
         tags: selectedTags,
         caption: caption.trim() || undefined,
         photoUrl: photoUri,
+        projectName: projects.find((p) => p.id === projectId)?.name || "",
+        uploadedBy: user?.user_metadata?.first_name || user?.email || "unknown",
       });
       Alert.alert('Saved', 'Photo uploaded', [
         { text: 'Done', onPress: () => router.back() },
@@ -90,26 +106,38 @@ export default function QuickPhotoScreen() {
         </View>
 
         {/* Photo capture area */}
-        <Pressable
-          onPress={() => setPhotoUri(photoUri ? null : 'placeholder')}
-          className="bg-[#1e293b] border-2 border-dashed border-[#334155] rounded-2xl items-center justify-center mb-5"
-          style={{ height: 220 }}
-        >
-          {photoUri ? (
-            <View className="items-center">
-              <Ionicons name="checkmark-circle" size={40} color={COLORS.success} />
-              <Text className="text-[#22c55e] mt-2 text-sm font-semibold">Photo captured</Text>
-            </View>
-          ) : (
-            <View className="items-center">
-              <View className="bg-[#334155] rounded-full p-4 mb-3">
-                <Ionicons name="camera" size={32} color={COLORS.dark.text} />
-              </View>
-              <Text className="text-white font-semibold text-base">Tap to capture photo</Text>
-              <Text className="text-[#64748b] text-sm mt-1">Camera will open</Text>
-            </View>
-          )}
-        </Pressable>
+        {photoUri ? (
+          <View className="relative mb-5 rounded-2xl overflow-hidden" style={{ height: 220 }}>
+            <Image source={{ uri: photoUri }} className="w-full h-full" resizeMode="cover" />
+            <Pressable
+              onPress={() => setPhotoUri(null)}
+              className="absolute top-3 right-3 bg-black/60 rounded-full p-2"
+            >
+              <Ionicons name="close" size={18} color="white" />
+            </Pressable>
+          </View>
+        ) : (
+          <View className="flex-row gap-3 mb-5">
+            <Pressable
+              onPress={takePhoto}
+              className="flex-1 items-center justify-center p-6 rounded-xl border-2 border-dashed border-[#334155] bg-[#1e293b]"
+              style={{ height: 180 }}
+            >
+              <Ionicons name="camera" size={28} color={COLORS.dark.textMuted} />
+              <Text className="text-white font-semibold text-sm mt-2">Camera</Text>
+              <Text className="text-[#64748b] text-xs mt-1">Take a photo</Text>
+            </Pressable>
+            <Pressable
+              onPress={pickImage}
+              className="flex-1 items-center justify-center p-6 rounded-xl border-2 border-dashed border-[#334155] bg-[#1e293b]"
+              style={{ height: 180 }}
+            >
+              <Ionicons name="images" size={28} color={COLORS.dark.textMuted} />
+              <Text className="text-white font-semibold text-sm mt-2">Gallery</Text>
+              <Text className="text-[#64748b] text-xs mt-1">Choose existing</Text>
+            </Pressable>
+          </View>
+        )}
 
         {/* Project */}
         <Text className="text-[#94a3b8] text-xs font-semibold mb-2 uppercase tracking-wide">Project</Text>
@@ -177,14 +205,21 @@ export default function QuickPhotoScreen() {
           multiline
         />
 
-        <Button
-          title="Upload Photo"
+        <TouchableOpacity
           onPress={handleSubmit}
-          loading={submitting}
-          variant="primary"
-          style={{ marginTop: SPACING.lg }}
-          iconLeft="cloud-upload"
-        />
+          disabled={submitting}
+          className="py-3.5 rounded-xl items-center justify-center flex-row mt-5"
+          style={{ backgroundColor: submitting ? '#334155' : '#2563eb' }}
+        >
+          {submitting ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <>
+              <Ionicons name="cloud-upload" size={18} color="white" style={{ marginRight: 8 }} />
+              <Text className="text-white font-semibold text-base">Upload Photo</Text>
+            </>
+          )}
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
