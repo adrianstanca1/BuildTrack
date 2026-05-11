@@ -21,6 +21,7 @@ export default function TabLayout() {
             safety: focused ? 'shield-checkmark' : 'shield-checkmark-outline',
             team: focused ? 'people' : 'people-outline',
             profile: focused ? 'person' : 'person-outline',
+            more: focused ? 'grid' : 'grid-outline',
           };
           
           const iconName = icons[route.name] || 'help';
@@ -56,7 +57,7 @@ export default function TabLayout() {
       <Tabs.Screen name="tasks" options={{ title: 'Tasks' }} />
       <Tabs.Screen name="safety" options={{ title: 'Safety' }} />
       <Tabs.Screen name="team" options={{ title: 'Team' }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+      <Tabs.Screen name="more" options={{ title: 'More' }} />
     </Tabs>
   );
 }
