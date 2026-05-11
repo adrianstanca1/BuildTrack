@@ -42,7 +42,7 @@ export default function MoreScreen() {
   const isDark = colorScheme === "dark";
   const textColor = isDark ? COLORS.dark.text : COLORS.light.text;
   const mutedColor = isDark ? COLORS.dark.textMuted : COLORS.light.textMuted;
-  const cardBg = isDark ? COLORS.dark.card : COLORS.light.card;
+  const cardBg = isDark ? COLORS.dark.surface : COLORS.light.surface;
   const iconBg = isDark ? "#1e3a5f" : "#eff6ff";
   const iconColor = isDark ? "#60a5fa" : "#2563eb";
 
