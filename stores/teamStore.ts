@@ -7,13 +7,13 @@ interface TeamState {
   workers: Worker[];
   loading: boolean;
   error: string | null;
-  
+
   fetchWorkers: () => Promise<void>;
   addWorker: (worker: Omit<Worker, 'id' | 'createdAt'>) => Promise<void>;
   updateWorker: (id: string, updates: Partial<Worker>) => Promise<void>;
   deleteWorker: (id: string) => Promise<void>;
   toggleActive: (id: string) => Promise<void>;
-  
+
   getWorkersByStatus: (status: string) => Worker[];
   getWorkersByRole: () => Record<string, Worker[]>;
   get roleBreakdown(): { role: string; count: number }[];
@@ -33,18 +33,23 @@ export const useTeamStore = create<TeamState>((set, get) => ({
 
   addWorker: async (worker) => {
     const { data, error } = await supabase.from('workers').insert(worker).select().single();
-    if (error) { console.error(error); return; }
+    if (error) {
+      useSyncStore.getState().queueMutation('workers', 'insert', worker);
+      return;
+    }
     set((s) => ({ workers: [...s.workers, data as Worker] }));
   },
 
   updateWorker: async (id, updates) => {
     set((s) => ({ workers: s.workers.map((w) => (w.id === id ? { ...w, ...updates } : w)) }));
-    await supabase.from('workers').update(updates).eq('id', id);
+    const { error } = await supabase.from('workers').update(updates).eq('id', id);
+    if (error) useSyncStore.getState().queueMutation('workers', 'update', { id, ...updates });
   },
 
   deleteWorker: async (id) => {
     set((s) => ({ workers: s.workers.filter((w) => w.id !== id) }));
-    await supabase.from('workers').delete().eq('id', id);
+    const { error } = await supabase.from('workers').delete().eq('id', id);
+    if (error) useSyncStore.getState().queueMutation('workers', 'delete', { id });
   },
 
   toggleActive: async (id) => {
@@ -52,7 +57,8 @@ export const useTeamStore = create<TeamState>((set, get) => ({
     if (!worker) return;
     const newStatus: WorkerStatus = worker.status === 'active' ? 'off-duty' : 'active';
     set((s) => ({ workers: s.workers.map((w) => (w.id === id ? { ...w, status: newStatus } : w)) }));
-    await supabase.from('workers').update({ status: newStatus }).eq('id', id);
+    const { error } = await supabase.from('workers').update({ status: newStatus }).eq('id', id);
+    if (error) useSyncStore.getState().queueMutation('workers', 'update', { id, status: newStatus });
   },
 
   getWorkersByStatus: (status) => {
@@ -60,20 +66,17 @@ export const useTeamStore = create<TeamState>((set, get) => ({
   },
 
   getWorkersByRole: () => {
-    const groups: Record<string, Worker[]> = {};
-    get().workers.forEach((w) => {
-      if (!groups[w.role]) groups[w.role] = [];
-      groups[w.role].push(w);
-    });
-    return groups;
+    const workers = get().workers;
+    return workers.reduce((acc: Record<string, Worker[]>, w) => {
+      if (!acc[w.role]) acc[w.role] = [];
+      acc[w.role].push(w);
+      return acc;
+    }, {});
   },
 
   get roleBreakdown() {
-    const { workers } = get();
-    const counts: Record<string, number> = {};
-    workers.filter((w) => w.status === 'active').forEach((w) => {
-      counts[w.role] = (counts[w.role] || 0) + 1;
-    });
-    return Object.entries(counts).map(([role, count]) => ({ role, count }));
+    const workers = get().workers;
+    const roles = [...new Set(workers.map((w) => w.role))];
+    return roles.map((role) => ({ role, count: workers.filter((w) => w.role === role).length }));
   },
 }));

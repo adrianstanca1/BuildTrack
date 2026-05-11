@@ -121,7 +121,10 @@ export const useBudgetStore = create<BudgetState>()(
         set({ loading: true, error: null });
         try {
           const { error } = await supabase.from('cost_entries').delete().eq('id', id);
-          if (error) throw error;
+          if (error) {
+            useSyncStore.getState().queueMutation('cost_entries', 'delete', { id });
+            return;
+          }
           set((state) => ({ entries: state.entries.filter((e) => e.id !== id), loading: false }));
         } catch (err) {
           set({ error: err instanceof Error ? err.message : 'Failed to delete', loading: false });
