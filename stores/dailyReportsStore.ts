@@ -32,7 +32,7 @@ interface DailyReportsState {
 
   setReports: (reports: DailyReport[]) => void;
   addReport: (report: DailyReport) => void;
-  updateReport: (id: string, updates: Partial<DailyReport>) => void;
+  updateReport: (id: string, updates: Partial<DailyReport>) => Promise<void>;
   removeReport: (id: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -54,9 +54,15 @@ export const useDailyReportsStore = create<DailyReportsState>()(
 
       setReports: (reports) => set({ reports }),
       addReport: (report) => set((state) => ({ reports: [report, ...state.reports] })),
-      updateReport: (id, updates) => set((state) => ({
-        reports: state.reports.map((r) => (r.id === id ? { ...r, ...updates } : r)),
-      })),
+      updateReport: async (id, updates) => {
+        set((state) => ({
+          reports: state.reports.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+        }));
+        const { error } = await supabase.from('daily_reports').update(updates).eq('id', id);
+        if (error) {
+          useSyncStore.getState().queueMutation('daily_reports', 'update', { id, ...updates });
+        }
+      },
       removeReport: (id) => set((state) => ({
         reports: state.reports.filter((r) => r.id !== id),
       })),

@@ -12,7 +12,7 @@ interface DrawingsState {
 
   setDrawings: (drawings: Drawing[]) => void;
   addDrawing: (drawing: Drawing) => void;
-  updateDrawing: (id: string, updates: Partial<Drawing>) => void;
+  updateDrawing: (id: string, updates: Partial<Drawing>) => Promise<void>;
   removeDrawing: (id: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -34,9 +34,15 @@ export const useDrawingsStore = create<DrawingsState>()(
 
       setDrawings: (drawings) => set({ drawings }),
       addDrawing: (drawing) => set((state) => ({ drawings: [drawing, ...state.drawings] })),
-      updateDrawing: (id, updates) => set((state) => ({
-        drawings: state.drawings.map((d) => (d.id === id ? { ...d, ...updates } : d)),
-      })),
+      updateDrawing: async (id, updates) => {
+        set((state) => ({
+          drawings: state.drawings.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+        }));
+        const { error } = await supabase.from('drawings').update(updates).eq('id', id);
+        if (error) {
+          useSyncStore.getState().queueMutation('drawings', 'update', { id, ...updates });
+        }
+      },
       removeDrawing: (id) => set((state) => ({
         drawings: state.drawings.filter((d) => d.id !== id),
       })),

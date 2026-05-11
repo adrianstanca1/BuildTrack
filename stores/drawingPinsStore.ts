@@ -12,7 +12,7 @@ interface DrawingPinsState {
 
   setPins: (pins: DrawingPin[]) => void;
   addPin: (pin: DrawingPin) => void;
-  updatePin: (id: string, updates: Partial<DrawingPin>) => void;
+  updatePin: (id: string, updates: Partial<DrawingPin>) => Promise<void>;
   removePin: (id: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -34,9 +34,15 @@ export const useDrawingPinsStore = create<DrawingPinsState>()(
 
       setPins: (pins) => set({ pins }),
       addPin: (pin) => set((state) => ({ pins: [pin, ...state.pins] })),
-      updatePin: (id, updates) => set((state) => ({
-        pins: state.pins.map((p) => (p.id === id ? { ...p, ...updates } : p)),
-      })),
+      updatePin: async (id, updates) => {
+        set((state) => ({
+          pins: state.pins.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+        }));
+        const { error } = await supabase.from('drawing_pins').update(updates).eq('id', id);
+        if (error) {
+          useSyncStore.getState().queueMutation('drawing_pins', 'update', { id, ...updates });
+        }
+      },
       removePin: (id) => set((state) => ({
         pins: state.pins.filter((p) => p.id !== id),
       })),
