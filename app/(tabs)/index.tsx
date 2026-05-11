@@ -6,6 +6,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useIncidents } from '@/hooks/useSafety';
+import SyncStatusBar from '@/components/SyncStatusBar';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '@/constants/theme';
 import { Building2, ClipboardList, AlertTriangle, Users, Bell, TrendingUp, ArrowRight, ShieldAlert, Bug, FileText, Clock, Zap } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -115,6 +116,7 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.dark.background }} edges={['top']}>
+      <SyncStatusBar />
       <ScrollView
         contentContainerStyle={{ padding: SPACING.md }}
         refreshControl={<RefreshControl refreshing={projectsLoading} onRefresh={onRefresh} tintColor={COLORS.dark.text} />}
