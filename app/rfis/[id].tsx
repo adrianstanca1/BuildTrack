@@ -73,7 +73,10 @@ export default function RfiDetailScreen() {
             <Ionicons name="arrow-back" size={24} color={COLORS.dark.text} />
           </Pressable>
           <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.dark.text }}>RFI Detail</Text>
-          <Pressable onPress={handleDelete}>
+                    <Pressable onPress={() => router.push(`/rfis/edit?id=${rfi.id}`)} className="p-2 mr-2">
+            <Ionicons name="create-outline" size={20} color={'#2563eb'} />
+          </Pressable>
+<Pressable onPress={handleDelete} className="p-2">
             <Ionicons name="trash-outline" size={24} color="#ef4444" />
           </Pressable>
         </View>
