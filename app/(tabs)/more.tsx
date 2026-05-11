@@ -20,6 +20,7 @@ interface MenuItem {
 
 const FEATURES: MenuItem[] = [
   { icon: "wallet", label: "Budget", route: "/budget" },
+  { icon: "swap-horizontal", label: "Change Orders", route: "/change-orders" },
   { icon: "clipboard", label: "Daily Reports", route: "/daily-reports" },
   { icon: "bug", label: "Defects", route: "/defects" },
   { icon: "document", label: "Drawings", route: "/drawings" },
@@ -28,11 +29,13 @@ const FEATURES: MenuItem[] = [
   { icon: "cube", label: "Materials", route: "/materials" },
   { icon: "people", label: "Meetings", route: "/meetings" },
   { icon: "shield-checkmark", label: "Permits", route: "/permits" },
+  { icon: "briefcase", label: "Projects", route: "/project" },
   { icon: "hammer", label: "Punch Items", route: "/punch-items" },
   { icon: "cart", label: "Purchase Orders", route: "/purchase-orders" },
   { icon: "chatbubble-ellipses", label: "RFIs", route: "/rfis" },
   { icon: "image", label: "Site Photos", route: "/site-photos" },
   { icon: "archive", label: "Submittals", route: "/submittals" },
+  { icon: "people-circle", label: "Team", route: "/team" },
   { icon: "time", label: "Timesheets", route: "/timesheets" },
 ];
 
@@ -98,7 +101,7 @@ export default function MoreScreen() {
                   marginRight: 8,
                   paddingHorizontal: 4,
                 }}>
-                  <Text style={{ color: "#fff", fontSize: 11, fontWeight: "700" }}>{item.badge > 99 ? "99+" : item.badge}</Text>
+                  <Text style={{ color: "#fff", fontSize: 11, fontWeight: "600" }}>{item.badge}</Text>
                 </View>
               )}
               <Ionicons name="chevron-forward" size={20} color={mutedColor} />
