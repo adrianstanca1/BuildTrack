@@ -9,6 +9,7 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/constants/theme";
+import { useNotificationsStore } from "../../stores/notificationsStore";
 
 interface MenuItem {
   icon: keyof typeof Ionicons.glyphMap;
@@ -17,27 +18,6 @@ interface MenuItem {
   badge?: number;
   color?: string;
 }
-
-const FEATURES: MenuItem[] = [
-  { icon: "wallet", label: "Budget", route: "/budget" },
-  { icon: "swap-horizontal", label: "Change Orders", route: "/change-orders" },
-  { icon: "clipboard", label: "Daily Reports", route: "/daily-reports" },
-  { icon: "bug", label: "Defects", route: "/defects" },
-  { icon: "document", label: "Drawings", route: "/drawings" },
-  { icon: "construct", label: "Equipment", route: "/equipment" },
-  { icon: "receipt", label: "Invoices", route: "/invoices" },
-  { icon: "cube", label: "Materials", route: "/materials" },
-  { icon: "people", label: "Meetings", route: "/meetings" },
-  { icon: "shield-checkmark", label: "Permits", route: "/permits" },
-  { icon: "briefcase", label: "Projects", route: "/project" },
-  { icon: "hammer", label: "Punch Items", route: "/punch-items" },
-  { icon: "cart", label: "Purchase Orders", route: "/purchase-orders" },
-  { icon: "chatbubble-ellipses", label: "RFIs", route: "/rfis" },
-  { icon: "image", label: "Site Photos", route: "/site-photos" },
-  { icon: "archive", label: "Submittals", route: "/submittals" },
-  { icon: "people-circle", label: "Team", route: "/team" },
-  { icon: "time", label: "Timesheets", route: "/timesheets" },
-];
 
 export default function MoreScreen() {
   const router = useRouter();
@@ -48,6 +28,28 @@ export default function MoreScreen() {
   const cardBg = isDark ? COLORS.dark.surface : COLORS.light.surface;
   const iconBg = isDark ? "#1e3a5f" : "#eff6ff";
   const iconColor = isDark ? "#60a5fa" : "#2563eb";
+  const unreadCount = useNotificationsStore((state) => state.unreadCount);
+
+  const FEATURES: MenuItem[] = [
+    { icon: "wallet", label: "Budget", route: "/budget" },
+    { icon: "swap-horizontal", label: "Change Orders", route: "/change-orders" },
+    { icon: "clipboard", label: "Daily Reports", route: "/daily-reports" },
+    { icon: "bug", label: "Defects", route: "/defects" },
+    { icon: "document", label: "Drawings", route: "/drawings" },
+    { icon: "construct", label: "Equipment", route: "/equipment" },
+    { icon: "receipt", label: "Invoices", route: "/invoices" },
+    { icon: "cube", label: "Materials", route: "/materials" },
+    { icon: "people", label: "Meetings", route: "/meetings" },
+    { icon: "shield-checkmark", label: "Permits", route: "/permits" },
+    { icon: "briefcase", label: "Projects", route: "/project" },
+    { icon: "hammer", label: "Punch Items", route: "/punch-items" },
+    { icon: "cart", label: "Purchase Orders", route: "/purchase-orders" },
+    { icon: "chatbubble-ellipses", label: "RFIs", route: "/rfis" },
+    { icon: "image", label: "Site Photos", route: "/site-photos" },
+    { icon: "archive", label: "Submittals", route: "/submittals" },
+    { icon: "time", label: "Timesheets", route: "/timesheets" },
+    { icon: "notifications", label: "Notifications", route: "/notifications", badge: unreadCount },
+  ];
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: isDark ? "#111827" : "#f3f4f6" }}>
