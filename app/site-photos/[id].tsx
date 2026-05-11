@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, Alert, useColorScheme } from 'react-native';
+import { View, Text, ScrollView, Pressable, Alert, useColorScheme, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -52,9 +52,23 @@ export default function SitePhotoDetailScreen() {
           <Text className="text-2xl font-bold text-gray-900 flex-1" numberOfLines={1}>
             {item.caption || 'Site Photo'}
           </Text>
+          <Pressable onPress={() => router.push(`/site-photos/edit?id=${item.id}`)} className="p-2 mr-2">
+            <Ionicons name="create-outline" size={20} color={isDark ? '#60a5fa' : '#2563eb'} />
+          </Pressable>
           <Pressable onPress={handleDelete} className="p-2">
             <Ionicons name="trash-outline" size={20} color="#ef4444" />
           </Pressable>
+        </View>
+
+        <View className="rounded-2xl overflow-hidden mb-5" style={{ backgroundColor: '#111827', height: 260 }}>
+          {item.photoUrl ? (
+            <Image source={{ uri: item.photoUrl }} className="w-full h-full" resizeMode="cover" />
+          ) : (
+            <View className="flex-1 justify-center items-center">
+              <Ionicons name="image-outline" size={48} color="#6b7280" />
+              <Text className="text-gray-400 mt-2">No photo</Text>
+            </View>
+          )}
         </View>
 
         <Card className="mt-4">
