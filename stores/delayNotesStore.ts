@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
+import { useSyncStore } from './syncStore';
 import type { DelayNote, DelayNoteStatus } from '../types/field';
 
 interface DelayNotesState {
@@ -59,7 +60,10 @@ export const useDelayNotesStore = create<DelayNotesState>()(
       createDelayNote: async (note) => {
         try {
           const { data, error } = await supabase.from('delay_notes').insert(note).select().single();
-          if (error) throw error;
+          if (error) {
+            useSyncStore.getState().queueMutation('delay_notes', 'insert', note);
+            return null;
+          }
           if (data) set((state) => ({ delayNotes: [data, ...state.delayNotes] }));
           return data;
         } catch (err) {
@@ -71,7 +75,10 @@ export const useDelayNotesStore = create<DelayNotesState>()(
       deleteDelayNote: async (id) => {
         try {
           const { error } = await supabase.from('delay_notes').delete().eq('id', id);
-          if (error) throw error;
+          if (error) {
+            useSyncStore.getState().queueMutation('delay_notes', 'delete', { id });
+            return;
+          }
           set((state) => ({ delayNotes: state.delayNotes.filter((n) => n.id !== id) }));
         } catch (err) {
           set({ error: err instanceof Error ? err.message : 'Failed to delete delay note' });

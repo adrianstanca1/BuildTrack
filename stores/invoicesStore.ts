@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
+import { useSyncStore } from './syncStore';
 import type { Invoice, InvoiceStatus } from '../types/field';
 
 interface InvoicesState {
@@ -127,7 +128,10 @@ export const useInvoicesStore = create<InvoicesState>()(
         set({ loading: true, error: null });
         try {
           const { error } = await supabase.from('invoices').delete().eq('id', id);
-          if (error) throw error;
+          if (error) {
+            useSyncStore.getState().queueMutation('invoices', 'delete', { id });
+            return;
+          }
           set((state) => ({
             invoices: state.invoices.filter((i) => i.id !== id),
             loading: false,

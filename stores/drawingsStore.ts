@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
+import { useSyncStore } from './syncStore';
 import type { Drawing, DrawingStatus } from '../types/field';
 
 interface DrawingsState {
@@ -119,7 +120,10 @@ export const useDrawingsStore = create<DrawingsState>()(
         set({ loading: true, error: null });
         try {
           const { error } = await supabase.from('drawings').delete().eq('id', id);
-          if (error) throw error;
+          if (error) {
+            useSyncStore.getState().queueMutation('drawings', 'delete', { id });
+            return;
+          }
           set((state) => ({
             drawings: state.drawings.filter((d) => d.id !== id),
             loading: false,

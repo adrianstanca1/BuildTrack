@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
+import { useSyncStore } from './syncStore';
 import type { Submittal, SubmittalStatus } from '../types/field';
 
 interface SubmittalsState {
@@ -125,7 +126,10 @@ export const useSubmittalsStore = create<SubmittalsState>()(
         set({ loading: true, error: null });
         try {
           const { error } = await supabase.from('submittals').delete().eq('id', id);
-          if (error) throw error;
+          if (error) {
+            useSyncStore.getState().queueMutation('submittals', 'delete', { id });
+            return;
+          }
           set((state) => ({
             submittals: state.submittals.filter((s) => s.id !== id),
             loading: false,

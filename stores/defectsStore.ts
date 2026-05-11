@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
+import { useSyncStore } from './syncStore';
 import type { Defect, DefectStatus, DefectSeverity } from '../types/field';
 
 interface DefectsState {
@@ -130,7 +131,10 @@ export const useDefectsStore = create<DefectsState>()(
         set({ loading: true, error: null });
         try {
           const { error } = await supabase.from('defects').delete().eq('id', id);
-          if (error) throw error;
+          if (error) {
+            useSyncStore.getState().queueMutation('defects', 'delete', { id });
+            return;
+          }
           set((state) => ({ defects: state.defects.filter((d) => d.id !== id), loading: false }));
         } catch (err) {
           set({ error: err instanceof Error ? err.message : 'Failed to delete defect', loading: false });

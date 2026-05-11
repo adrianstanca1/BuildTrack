@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
+import { useSyncStore } from './syncStore';
 import type { Timesheet, TimesheetStatus, TimesheetCategory } from '../types/field';
 
 interface TimesheetsState {
@@ -152,7 +153,10 @@ export const useTimesheetsStore = create<TimesheetsState>()(
         set({ loading: true, error: null });
         try {
           const { error } = await supabase.from('timesheets').delete().eq('id', id);
-          if (error) throw error;
+          if (error) {
+            useSyncStore.getState().queueMutation('timesheets', 'delete', { id });
+            return;
+          }
           set((state) => ({ timesheets: state.timesheets.filter((t) => t.id !== id), loading: false }));
         } catch (err) {
           set({ error: err instanceof Error ? err.message : 'Failed to delete timesheet', loading: false });

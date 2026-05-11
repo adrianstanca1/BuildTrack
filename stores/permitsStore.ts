@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
+import { useSyncStore } from './syncStore';
 import type { Permit, PermitStatus, PermitType } from '../types/field';
 
 interface PermitsState {
@@ -137,7 +138,10 @@ export const usePermitsStore = create<PermitsState>()(
         set({ loading: true, error: null });
         try {
           const { error } = await supabase.from('permits').delete().eq('id', id);
-          if (error) throw error;
+          if (error) {
+            useSyncStore.getState().queueMutation('permits', 'delete', { id });
+            return;
+          }
           set((state) => ({ permits: state.permits.filter((p) => p.id !== id), loading: false }));
         } catch (err) {
           set({ error: err instanceof Error ? err.message : 'Failed to delete permit', loading: false });

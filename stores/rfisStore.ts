@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
+import { useSyncStore } from './syncStore';
 import type { Rfi, RfiStatus } from '../types/field';
 
 interface RfisState {
@@ -127,7 +128,10 @@ export const useRfisStore = create<RfisState>()(
         set({ loading: true, error: null });
         try {
           const { error } = await supabase.from('rfis').delete().eq('id', id);
-          if (error) throw error;
+          if (error) {
+            useSyncStore.getState().queueMutation('rfis', 'delete', { id });
+            return;
+          }
           set((state) => ({
             rfis: state.rfis.filter((r) => r.id !== id),
             loading: false,

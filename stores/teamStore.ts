@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import { useSyncStore } from './syncStore';
 import type { Worker, WorkerStatus } from '../types';
 
 interface TeamState {

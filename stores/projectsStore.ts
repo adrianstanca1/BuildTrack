@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
+import { useSyncStore } from './syncStore';
 import type { Project } from '../types';
 
 interface ProjectsState {
@@ -128,7 +129,10 @@ export const useProjectsStore = create<ProjectsState>()(
         set({ loading: true, error: null });
         try {
           const { error } = await supabase.from('projects').delete().eq('id', id);
-          if (error) throw error;
+          if (error) {
+            useSyncStore.getState().queueMutation('projects', 'delete', { id });
+            return;
+          }
           set((state) => ({ projects: state.projects.filter((p) => p.id !== id), loading: false }));
         } catch (err) {
           set({ error: err instanceof Error ? err.message : 'Failed to delete project', loading: false });

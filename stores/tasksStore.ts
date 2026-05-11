@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
+import { useSyncStore } from './syncStore';
 import type { Task } from '../types';
 
 interface TasksState {
@@ -167,7 +168,10 @@ export const useTasksStore = create<TasksState>()(
         set({ loading: true, error: null });
         try {
           const { error } = await supabase.from('tasks').delete().eq('id', id);
-          if (error) throw error;
+          if (error) {
+            useSyncStore.getState().queueMutation('tasks', 'delete', { id });
+            return;
+          }
           set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id), loading: false }));
         } catch (err) {
           set({ error: err instanceof Error ? err.message : 'Failed to delete task', loading: false });
