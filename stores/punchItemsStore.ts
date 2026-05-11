@@ -12,7 +12,7 @@ interface PunchItemsState {
 
   setPunchItems: (items: PunchItem[]) => void;
   addPunchItem: (item: PunchItem) => void;
-  updatePunchItem: (id: string, updates: Partial<PunchItem>) => void;
+  updatePunchItem: (id: string, updates: Partial<PunchItem>) => Promise<void>;
   removePunchItem: (id: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -34,9 +34,15 @@ export const usePunchItemsStore = create<PunchItemsState>()(
 
       setPunchItems: (items) => set({ punchItems: items }),
       addPunchItem: (item) => set((state) => ({ punchItems: [item, ...state.punchItems] })),
-      updatePunchItem: (id, updates) => set((state) => ({
-        punchItems: state.punchItems.map((i) => (i.id === id ? { ...i, ...updates } : i)),
-      })),
+      updatePunchItem: async (id, updates) => {
+        set((state) => ({
+          punchItems: state.punchItems.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+        }));
+        const { error } = await supabase.from('punch_items').update(updates).eq('id', id);
+        if (error) {
+          useSyncStore.getState().queueMutation('punch_items', 'update', { id, ...updates });
+        }
+      },
       removePunchItem: (id) => set((state) => ({
         punchItems: state.punchItems.filter((i) => i.id !== id),
       })),

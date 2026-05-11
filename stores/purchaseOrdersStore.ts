@@ -12,7 +12,7 @@ interface PurchaseOrdersState {
 
   setPurchaseOrders: (orders: PurchaseOrder[]) => void;
   addPurchaseOrder: (order: PurchaseOrder) => void;
-  updatePurchaseOrder: (id: string, updates: Partial<PurchaseOrder>) => void;
+  updatePurchaseOrder: (id: string, updates: Partial<PurchaseOrder>) => Promise<void>;
   removePurchaseOrder: (id: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -41,9 +41,15 @@ export const usePurchaseOrdersStore = create<PurchaseOrdersState>()(
 
       setPurchaseOrders: (orders) => set({ purchaseOrders: orders }),
       addPurchaseOrder: (order) => set((state) => ({ purchaseOrders: [order, ...state.purchaseOrders] })),
-      updatePurchaseOrder: (id, updates) => set((state) => ({
-        purchaseOrders: state.purchaseOrders.map((o) => (o.id === id ? { ...o, ...updates } : o)),
-      })),
+      updatePurchaseOrder: async (id, updates) => {
+        set((state) => ({
+          purchaseOrders: state.purchaseOrders.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+        }));
+        const { error } = await supabase.from('purchase_orders').update(updates).eq('id', id);
+        if (error) {
+          useSyncStore.getState().queueMutation('purchase_orders', 'update', { id, ...updates });
+        }
+      },
       removePurchaseOrder: (id) => set((state) => ({
         purchaseOrders: state.purchaseOrders.filter((o) => o.id !== id),
       })),

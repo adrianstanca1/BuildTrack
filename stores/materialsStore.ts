@@ -12,7 +12,7 @@ interface MaterialsState {
 
   setMaterials: (materials: Material[]) => void;
   addMaterial: (material: Material) => void;
-  updateMaterial: (id: string, updates: Partial<Material>) => void;
+  updateMaterial: (id: string, updates: Partial<Material>) => Promise<void>;
   removeMaterial: (id: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -35,9 +35,15 @@ export const useMaterialsStore = create<MaterialsState>()(
 
       setMaterials: (materials) => set({ materials }),
       addMaterial: (material) => set((state) => ({ materials: [material, ...state.materials] })),
-      updateMaterial: (id, updates) => set((state) => ({
-        materials: state.materials.map((m) => (m.id === id ? { ...m, ...updates } : m)),
-      })),
+      updateMaterial: async (id, updates) => {
+        set((state) => ({
+          materials: state.materials.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+        }));
+        const { error } = await supabase.from('materials').update(updates).eq('id', id);
+        if (error) {
+          useSyncStore.getState().queueMutation('materials', 'update', { id, ...updates });
+        }
+      },
       removeMaterial: (id) => set((state) => ({
         materials: state.materials.filter((m) => m.id !== id),
       })),

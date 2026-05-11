@@ -14,7 +14,7 @@ interface ProjectsState {
   // Actions
   setProjects: (projects: Project[]) => void;
   addProject: (project: Project) => void;
-  updateProject: (id: string, updates: Partial<Project>) => void;
+  updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
   removeProject: (id: string) => void;
   setSelectedProject: (project: Project | null) => void;
   setLoading: (loading: boolean) => void;
@@ -36,9 +36,15 @@ export const useProjectsStore = create<ProjectsState>()(
 
       setProjects: (projects) => set({ projects }),
       addProject: (project) => set((state) => ({ projects: [project, ...state.projects] })),
-      updateProject: (id, updates) => set((state) => ({
-        projects: state.projects.map((p) => (p.id === id ? { ...p, ...updates } : p)),
-      })),
+      updateProject: async (id, updates) => {
+        set((state) => ({
+          projects: state.projects.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+        }));
+        const { error } = await supabase.from('projects').update(updates).eq('id', id);
+        if (error) {
+          useSyncStore.getState().queueMutation('projects', 'update', { id, ...updates });
+        }
+      },
       removeProject: (id) => set((state) => ({
         projects: state.projects.filter((p) => p.id !== id),
       })),

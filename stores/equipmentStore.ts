@@ -12,7 +12,7 @@ interface EquipmentState {
 
   setEquipment: (equipment: Equipment[]) => void;
   addEquipment: (item: Equipment) => void;
-  updateEquipment: (id: string, updates: Partial<Equipment>) => void;
+  updateEquipment: (id: string, updates: Partial<Equipment>) => Promise<void>;
   removeEquipment: (id: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -35,9 +35,15 @@ export const useEquipmentStore = create<EquipmentState>()(
 
       setEquipment: (equipment) => set({ equipment }),
       addEquipment: (item) => set((state) => ({ equipment: [item, ...state.equipment] })),
-      updateEquipment: (id, updates) => set((state) => ({
-        equipment: state.equipment.map((e) => (e.id === id ? { ...e, ...updates } : e)),
-      })),
+      updateEquipment: async (id, updates) => {
+        set((state) => ({
+          equipment: state.equipment.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+        }));
+        const { error } = await supabase.from('equipment').update(updates).eq('id', id);
+        if (error) {
+          useSyncStore.getState().queueMutation('equipment', 'update', { id, ...updates });
+        }
+      },
       removeEquipment: (id) => set((state) => ({
         equipment: state.equipment.filter((e) => e.id !== id),
       })),

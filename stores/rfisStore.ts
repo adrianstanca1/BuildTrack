@@ -12,7 +12,7 @@ interface RfisState {
 
   setRfis: (rfis: Rfi[]) => void;
   addRfi: (rfi: Rfi) => void;
-  updateRfi: (id: string, updates: Partial<Rfi>) => void;
+  updateRfi: (id: string, updates: Partial<Rfi>) => Promise<void>;
   removeRfi: (id: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -34,9 +34,15 @@ export const useRfisStore = create<RfisState>()(
 
       setRfis: (rfis) => set({ rfis }),
       addRfi: (rfi) => set((state) => ({ rfis: [rfi, ...state.rfis] })),
-      updateRfi: (id, updates) => set((state) => ({
-        rfis: state.rfis.map((r) => (r.id === id ? { ...r, ...updates } : r)),
-      })),
+      updateRfi: async (id, updates) => {
+        set((state) => ({
+          rfis: state.rfis.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+        }));
+        const { error } = await supabase.from('rfis').update(updates).eq('id', id);
+        if (error) {
+          useSyncStore.getState().queueMutation('rfis', 'update', { id, ...updates });
+        }
+      },
       removeRfi: (id) => set((state) => ({
         rfis: state.rfis.filter((r) => r.id !== id),
       })),

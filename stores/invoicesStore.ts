@@ -12,7 +12,7 @@ interface InvoicesState {
 
   setInvoices: (invoices: Invoice[]) => void;
   addInvoice: (invoice: Invoice) => void;
-  updateInvoice: (id: string, updates: Partial<Invoice>) => void;
+  updateInvoice: (id: string, updates: Partial<Invoice>) => Promise<void>;
   removeInvoice: (id: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -35,9 +35,15 @@ export const useInvoicesStore = create<InvoicesState>()(
 
       setInvoices: (invoices) => set({ invoices }),
       addInvoice: (invoice) => set((state) => ({ invoices: [invoice, ...state.invoices] })),
-      updateInvoice: (id, updates) => set((state) => ({
-        invoices: state.invoices.map((i) => (i.id === id ? { ...i, ...updates } : i)),
-      })),
+      updateInvoice: async (id, updates) => {
+        set((state) => ({
+          invoices: state.invoices.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+        }));
+        const { error } = await supabase.from('invoices').update(updates).eq('id', id);
+        if (error) {
+          useSyncStore.getState().queueMutation('invoices', 'update', { id, ...updates });
+        }
+      },
       removeInvoice: (id) => set((state) => ({
         invoices: state.invoices.filter((i) => i.id !== id),
       })),

@@ -12,7 +12,7 @@ interface DefectsState {
 
   setDefects: (defects: Defect[]) => void;
   addDefect: (defect: Defect) => void;
-  updateDefect: (id: string, updates: Partial<Defect>) => void;
+  updateDefect: (id: string, updates: Partial<Defect>) => Promise<void>;
   removeDefect: (id: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -35,9 +35,15 @@ export const useDefectsStore = create<DefectsState>()(
 
       setDefects: (defects) => set({ defects }),
       addDefect: (defect) => set((state) => ({ defects: [defect, ...state.defects] })),
-      updateDefect: (id, updates) => set((state) => ({
-        defects: state.defects.map((d) => (d.id === id ? { ...d, ...updates } : d)),
-      })),
+      updateDefect: async (id, updates) => {
+        set((state) => ({
+          defects: state.defects.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+        }));
+        const { error } = await supabase.from('defects').update(updates).eq('id', id);
+        if (error) {
+          useSyncStore.getState().queueMutation('defects', 'update', { id, ...updates });
+        }
+      },
       removeDefect: (id) => set((state) => ({
         defects: state.defects.filter((d) => d.id !== id),
       })),

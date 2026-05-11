@@ -36,12 +36,23 @@ export const useChangeOrdersStore = create<ChangeOrdersState>()(
       setChangeOrders: (changeOrders) => set({ changeOrders }),
       addChangeOrder: (changeOrder) =>
         set((state) => ({ changeOrders: [changeOrder, ...state.changeOrders] })),
-      updateChangeOrder: (id, updates) =>
+      updateChangeOrder: async (id, updates) => {
+
         set((state) => ({
-          changeOrders: state.changeOrders.map((co) =>
-            co.id === id ? { ...co, ...updates } : co
-          ),
-        })),
+
+          changeOrders: state.changeOrders.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+
+        }));
+
+        const { error } = await supabase.from('change_orders').update(updates).eq('id', id);
+
+        if (error) {
+
+          useSyncStore.getState().queueMutation('change_orders', 'update', { id, ...updates });
+
+        }
+
+      },
       removeChangeOrder: (id) =>
         set((state) => ({
           changeOrders: state.changeOrders.filter((co) => co.id !== id),

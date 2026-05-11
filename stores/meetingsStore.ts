@@ -12,7 +12,7 @@ interface MeetingsState {
 
   setMeetings: (meetings: Meeting[]) => void;
   addMeeting: (meeting: Meeting) => void;
-  updateMeeting: (id: string, updates: Partial<Meeting>) => void;
+  updateMeeting: (id: string, updates: Partial<Meeting>) => Promise<void>;
   removeMeeting: (id: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -34,9 +34,15 @@ export const useMeetingsStore = create<MeetingsState>()(
 
       setMeetings: (meetings) => set({ meetings }),
       addMeeting: (meeting) => set((state) => ({ meetings: [meeting, ...state.meetings] })),
-      updateMeeting: (id, updates) => set((state) => ({
-        meetings: state.meetings.map((m) => (m.id === id ? { ...m, ...updates } : m)),
-      })),
+      updateMeeting: async (id, updates) => {
+        set((state) => ({
+          meetings: state.meetings.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+        }));
+        const { error } = await supabase.from('meetings').update(updates).eq('id', id);
+        if (error) {
+          useSyncStore.getState().queueMutation('meetings', 'update', { id, ...updates });
+        }
+      },
       removeMeeting: (id) => set((state) => ({
         meetings: state.meetings.filter((m) => m.id !== id),
       })),

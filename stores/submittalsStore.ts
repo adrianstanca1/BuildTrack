@@ -12,7 +12,7 @@ interface SubmittalsState {
 
   setSubmittals: (submittals: Submittal[]) => void;
   addSubmittal: (submittal: Submittal) => void;
-  updateSubmittal: (id: string, updates: Partial<Submittal>) => void;
+  updateSubmittal: (id: string, updates: Partial<Submittal>) => Promise<void>;
   removeSubmittal: (id: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -34,9 +34,15 @@ export const useSubmittalsStore = create<SubmittalsState>()(
 
       setSubmittals: (submittals) => set({ submittals }),
       addSubmittal: (submittal) => set((state) => ({ submittals: [submittal, ...state.submittals] })),
-      updateSubmittal: (id, updates) => set((state) => ({
-        submittals: state.submittals.map((s) => (s.id === id ? { ...s, ...updates } : s)),
-      })),
+      updateSubmittal: async (id, updates) => {
+        set((state) => ({
+          submittals: state.submittals.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+        }));
+        const { error } = await supabase.from('submittals').update(updates).eq('id', id);
+        if (error) {
+          useSyncStore.getState().queueMutation('submittals', 'update', { id, ...updates });
+        }
+      },
       removeSubmittal: (id) => set((state) => ({
         submittals: state.submittals.filter((s) => s.id !== id),
       })),

@@ -12,7 +12,7 @@ interface TimesheetsState {
 
   setTimesheets: (timesheets: Timesheet[]) => void;
   addTimesheet: (timesheet: Timesheet) => void;
-  updateTimesheet: (id: string, updates: Partial<Timesheet>) => void;
+  updateTimesheet: (id: string, updates: Partial<Timesheet>) => Promise<void>;
   removeTimesheet: (id: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -37,9 +37,15 @@ export const useTimesheetsStore = create<TimesheetsState>()(
 
       setTimesheets: (timesheets) => set({ timesheets }),
       addTimesheet: (timesheet) => set((state) => ({ timesheets: [timesheet, ...state.timesheets] })),
-      updateTimesheet: (id, updates) => set((state) => ({
-        timesheets: state.timesheets.map((t) => (t.id === id ? { ...t, ...updates } : t)),
-      })),
+      updateTimesheet: async (id, updates) => {
+        set((state) => ({
+          timesheets: state.timesheets.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+        }));
+        const { error } = await supabase.from('timesheets').update(updates).eq('id', id);
+        if (error) {
+          useSyncStore.getState().queueMutation('timesheets', 'update', { id, ...updates });
+        }
+      },
       removeTimesheet: (id) => set((state) => ({
         timesheets: state.timesheets.filter((t) => t.id !== id),
       })),

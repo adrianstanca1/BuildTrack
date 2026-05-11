@@ -12,7 +12,7 @@ interface SitePhotosState {
 
   setSitePhotos: (photos: SitePhoto[]) => void;
   addSitePhoto: (photo: SitePhoto) => void;
-  updateSitePhoto: (id: string, updates: Partial<SitePhoto>) => void;
+  updateSitePhoto: (id: string, updates: Partial<SitePhoto>) => Promise<void>;
   removeSitePhoto: (id: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -33,9 +33,15 @@ export const useSitePhotosStore = create<SitePhotosState>()(
 
       setSitePhotos: (photos) => set({ sitePhotos: photos }),
       addSitePhoto: (photo) => set((state) => ({ sitePhotos: [photo, ...state.sitePhotos] })),
-      updateSitePhoto: (id, updates) => set((state) => ({
-        sitePhotos: state.sitePhotos.map((p) => (p.id === id ? { ...p, ...updates } : p)),
-      })),
+      updateSitePhoto: async (id, updates) => {
+        set((state) => ({
+          sitePhotos: state.sitePhotos.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+        }));
+        const { error } = await supabase.from('site_photos').update(updates).eq('id', id);
+        if (error) {
+          useSyncStore.getState().queueMutation('site_photos', 'update', { id, ...updates });
+        }
+      },
       removeSitePhoto: (id) => set((state) => ({
         sitePhotos: state.sitePhotos.filter((p) => p.id !== id),
       })),

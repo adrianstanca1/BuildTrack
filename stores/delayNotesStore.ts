@@ -12,7 +12,7 @@ interface DelayNotesState {
 
   setDelayNotes: (notes: DelayNote[]) => void;
   addDelayNote: (note: DelayNote) => void;
-  updateDelayNote: (id: string, updates: Partial<DelayNote>) => void;
+  updateDelayNote: (id: string, updates: Partial<DelayNote>) => Promise<void>;
   removeDelayNote: (id: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -34,9 +34,15 @@ export const useDelayNotesStore = create<DelayNotesState>()(
 
       setDelayNotes: (notes) => set({ delayNotes: notes }),
       addDelayNote: (note) => set((state) => ({ delayNotes: [note, ...state.delayNotes] })),
-      updateDelayNote: (id, updates) => set((state) => ({
-        delayNotes: state.delayNotes.map((n) => (n.id === id ? { ...n, ...updates } : n)),
-      })),
+      updateDelayNote: async (id, updates) => {
+        set((state) => ({
+          delayNotes: state.delayNotes.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+        }));
+        const { error } = await supabase.from('delay_notes').update(updates).eq('id', id);
+        if (error) {
+          useSyncStore.getState().queueMutation('delay_notes', 'update', { id, ...updates });
+        }
+      },
       removeDelayNote: (id) => set((state) => ({
         delayNotes: state.delayNotes.filter((n) => n.id !== id),
       })),

@@ -12,7 +12,7 @@ interface PermitsState {
 
   setPermits: (permits: Permit[]) => void;
   addPermit: (permit: Permit) => void;
-  updatePermit: (id: string, updates: Partial<Permit>) => void;
+  updatePermit: (id: string, updates: Partial<Permit>) => Promise<void>;
   removePermit: (id: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -36,9 +36,15 @@ export const usePermitsStore = create<PermitsState>()(
 
       setPermits: (permits) => set({ permits }),
       addPermit: (permit) => set((state) => ({ permits: [permit, ...state.permits] })),
-      updatePermit: (id, updates) => set((state) => ({
-        permits: state.permits.map((p) => (p.id === id ? { ...p, ...updates } : p)),
-      })),
+      updatePermit: async (id, updates) => {
+        set((state) => ({
+          permits: state.permits.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+        }));
+        const { error } = await supabase.from('permits').update(updates).eq('id', id);
+        if (error) {
+          useSyncStore.getState().queueMutation('permits', 'update', { id, ...updates });
+        }
+      },
       removePermit: (id) => set((state) => ({
         permits: state.permits.filter((p) => p.id !== id),
       })),
