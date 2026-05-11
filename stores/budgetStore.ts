@@ -27,6 +27,7 @@ interface BudgetState {
 
   fetchEntries: () => Promise<void>;
   createEntry: (data: Omit<CostEntry, 'id' | 'createdAt'>) => Promise<CostEntry | null>;
+  updateEntry: (id: string, updates: Partial<CostEntry>) => Promise<void>;
   deleteEntry: (id: string) => Promise<void>;
 }
 
@@ -128,6 +129,16 @@ export const useBudgetStore = create<BudgetState>()(
           set((state) => ({ entries: state.entries.filter((e) => e.id !== id), loading: false }));
         } catch (err) {
           set({ error: err instanceof Error ? err.message : 'Failed to delete', loading: false });
+        }
+      },
+
+      updateEntry: async (id, updates) => {
+        set((state) => ({
+          entries: state.entries.map((e) => (e.id === id ? { ...e, ...updates } : e)),
+        }));
+        const { error } = await supabase.from('cost_entries').update(updates).eq('id', id);
+        if (error) {
+          useSyncStore.getState().queueMutation('cost_entries', 'update', { id, ...updates });
         }
       },
     }),
