@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
+import { useSyncStore } from './syncStore';
 import type { Meeting, MeetingStatus } from '../types/field';
 
 interface MeetingsState {
@@ -128,7 +129,10 @@ export const useMeetingsStore = create<MeetingsState>()(
         set({ loading: true, error: null });
         try {
           const { error } = await supabase.from('meetings').delete().eq('id', id);
-          if (error) throw error;
+          if (error) {
+            useSyncStore.getState().queueMutation('meetings', 'delete', { id });
+            return;
+          }
           set((state) => ({
             meetings: state.meetings.filter((m) => m.id !== id),
             loading: false,

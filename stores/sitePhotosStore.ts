@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
+import { useSyncStore } from './syncStore';
 import type { SitePhoto } from '../types/field';
 
 interface SitePhotosState {
@@ -57,7 +58,10 @@ export const useSitePhotosStore = create<SitePhotosState>()(
       createSitePhoto: async (photo) => {
         try {
           const { data, error } = await supabase.from('site_photos').insert(photo).select().single();
-          if (error) throw error;
+          if (error) {
+            useSyncStore.getState().queueMutation('site_photos', 'insert', photo);
+            return null;
+          }
           if (data) set((state) => ({ sitePhotos: [data, ...state.sitePhotos] }));
           return data;
         } catch (err) {
@@ -69,7 +73,10 @@ export const useSitePhotosStore = create<SitePhotosState>()(
       deleteSitePhoto: async (id) => {
         try {
           const { error } = await supabase.from('site_photos').delete().eq('id', id);
-          if (error) throw error;
+          if (error) {
+            useSyncStore.getState().queueMutation('site_photos', 'delete', { id });
+            return;
+          }
           set((state) => ({ sitePhotos: state.sitePhotos.filter((p) => p.id !== id) }));
         } catch (err) {
           set({ error: err instanceof Error ? err.message : 'Failed to delete site photo' });

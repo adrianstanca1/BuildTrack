@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
+import { useSyncStore } from './syncStore';
 import type { PunchItem, PunchItemStatus, PunchItemSeverity } from '../types/field';
 
 interface PunchItemsState {
@@ -59,7 +60,10 @@ export const usePunchItemsStore = create<PunchItemsState>()(
       createPunchItem: async (item) => {
         try {
           const { data, error } = await supabase.from('punch_items').insert(item).select().single();
-          if (error) throw error;
+          if (error) {
+            useSyncStore.getState().queueMutation('punch_items', 'insert', item);
+            return null;
+          }
           if (data) set((state) => ({ punchItems: [data, ...state.punchItems] }));
           return data;
         } catch (err) {
@@ -71,7 +75,10 @@ export const usePunchItemsStore = create<PunchItemsState>()(
       deletePunchItem: async (id) => {
         try {
           const { error } = await supabase.from('punch_items').delete().eq('id', id);
-          if (error) throw error;
+          if (error) {
+            useSyncStore.getState().queueMutation('punch_items', 'delete', { id });
+            return;
+          }
           set((state) => ({ punchItems: state.punchItems.filter((i) => i.id !== id) }));
         } catch (err) {
           set({ error: err instanceof Error ? err.message : 'Failed to delete punch item' });

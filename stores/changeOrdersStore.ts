@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
+import { useSyncStore } from './syncStore';
 import type { ChangeOrder, ChangeOrderStatus, ChangeOrderType } from '../types/field';
 
 interface ChangeOrdersState {
@@ -180,7 +181,10 @@ export const useChangeOrdersStore = create<ChangeOrdersState>()(
         set({ loading: true, error: null });
         try {
           const { error } = await supabase.from('change_orders').delete().eq('id', id);
-          if (error) throw error;
+          if (error) {
+            useSyncStore.getState().queueMutation('change_orders', 'delete', { id });
+            return;
+          }
           set((state) => ({
             changeOrders: state.changeOrders.filter((co) => co.id !== id),
             loading: false,
