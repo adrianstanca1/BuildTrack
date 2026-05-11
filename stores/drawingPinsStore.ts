@@ -78,21 +78,26 @@ export const useDrawingPinsStore = create<DrawingPinsState>()(
       createPin: async (pinData) => {
         set({ loading: true, error: null });
         try {
+          const payload = {
+            drawing_id: pinData.drawingId,
+            x: pinData.x,
+            y: pinData.y,
+            type: pinData.type,
+            title: pinData.title,
+            description: pinData.description,
+            related_id: pinData.relatedId,
+          };
           const { data, error } = await supabase
             .from('drawing_pins')
-            .insert({
-              drawing_id: pinData.drawingId,
-              x: pinData.x,
-              y: pinData.y,
-              type: pinData.type,
-              title: pinData.title,
-              description: pinData.description,
-              related_id: pinData.relatedId,
-            })
+            .insert(payload)
             .select()
             .single();
 
-          if (error) throw error;
+          if (error) {
+            useSyncStore.getState().queueMutation('drawing_pins', 'insert', payload);
+            set({ loading: false });
+            return null;
+          }
 
           const pin: DrawingPin = {
             id: data.id,
