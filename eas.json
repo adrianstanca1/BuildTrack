@@ -36,6 +36,18 @@
       "channel": "preview",
       "autoIncrement": true
     },
+    "ci": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": true,
+        "resourceClass": "medium"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://buildtrack.cortexbuildpro.com",
+        "EXPO_PUBLIC_API_URL": "https://buildtrack.cortexbuildpro.com/api"
+      },
+      "channel": "ci"
+    },
     "production": {
       "distribution": "store",
       "env": {
