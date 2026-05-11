@@ -53,6 +53,9 @@ export default function MaterialDetailScreen() {
           <Text className="text-2xl font-bold text-gray-900 flex-1" numberOfLines={1}>
             {item.name || 'Material'}
           </Text>
+          <Pressable onPress={() => router.push(`/materials/edit?id=${item.id}`)} className="p-2 mr-2">
+            <Ionicons name="create-outline" size={20} color={isDark ? '#60a5fa' : '#2563eb'} />
+          </Pressable>
           <Pressable onPress={handleDelete} className="p-2">
             <Ionicons name="trash-outline" size={20} color="#ef4444" />
           </Pressable>

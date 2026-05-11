@@ -80,17 +80,10 @@ export default function SitePhotoDetailScreen() {
             </View>
           </View>
           <View className="flex-row items-center py-2">
-            <Ionicons name="document-text-outline" size={20} color={isDark ? '#6b7280' : '#9ca3af'} />
+            <Ionicons name="location-outline" size={20} color={isDark ? '#6b7280' : '#9ca3af'} />
             <View className="ml-3 flex-1">
-              <Text className="text-xs text-gray-400">Description</Text>
-              <Text className="text-sm font-medium text-gray-900">{item.caption || "N/A"}</Text>
-            </View>
-          </View>
-          <View className="flex-row items-center py-2">
-            <Ionicons name="list-outline" size={20} color={isDark ? '#6b7280' : '#9ca3af'} />
-            <View className="ml-3 flex-1">
-              <Text className="text-xs text-gray-400">Category</Text>
-              <Text className="text-sm font-medium text-gray-900">{item.tags.join(", ") || "N/A"}</Text>
+              <Text className="text-xs text-gray-400">Location</Text>
+              <Text className="text-sm font-medium text-gray-900">{item.location || "N/A"}</Text>
             </View>
           </View>
           <View className="flex-row items-center py-2">
@@ -118,7 +111,7 @@ export default function SitePhotoDetailScreen() {
             <Ionicons name="pricetag-outline" size={20} color={isDark ? '#6b7280' : '#9ca3af'} />
             <View className="ml-3 flex-1">
               <Text className="text-xs text-gray-400">Tags</Text>
-              <Text className="text-sm font-medium text-gray-900">{item.tags || "N/A"}</Text>
+              <Text className="text-sm font-medium text-gray-900">{item.tags?.join(", ") || "N/A"}</Text>
             </View>
           </View>
           <View className="flex-row items-center py-2">
