@@ -7,7 +7,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "postinstall": "node scripts/patch-expo-modules.js || true"
   },
   "dependencies": {
     "@babel/plugin-transform-react-jsx": "^7.28.6",
@@ -61,10 +62,6 @@
     "typescript": "~5.9.2"
   },
   "private": true,
-  "overrides": {
-    "postcss": ">=8.5.10",
-    "@babel/runtime": ">=7.26.10"
-  },
   "expo": {
     "doctor": {
       "reactNativeDirectoryCheck": {
