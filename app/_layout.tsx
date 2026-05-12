@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ONBOARDING_KEY } from '../constants/storage';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import { registerForPushNotifications, addNotificationResponseListener } from '../lib/pushNotifications';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -22,6 +23,28 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       setHasOnboarded(!!value);
     });
   }, []);
+
+  // Register push notifications when authenticated
+  useEffect(() => {
+    if (user) {
+      registerForPushNotifications().catch(console.error);
+      const unsubResponse = addNotificationResponseListener((response) => {
+        const data = response.notification.request.content.data as any;
+        if (data?.relatedId) {
+          if (data.type === 'project') {
+            router.push(`/(modals)/project-details?id=${data.relatedId}` as any);
+          } else if (data.type === 'task') {
+            router.push(`/(modals)/task-details?id=${data.relatedId}` as any);
+          } else if (data.type === 'safety') {
+            router.push(`/(modals)/safety-report?id=${data.relatedId}` as any);
+          }
+        }
+      });
+      return () => {
+        unsubResponse();
+      };
+    }
+  }, [user]);
 
   useEffect(() => {
     if (isLoading || hasOnboarded === null) return;
