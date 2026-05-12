@@ -1,8 +1,7 @@
-name: Build iOS on macOS (EAS Local) & Upload IPA
+name: Build iOS on macOS & Upload IPA
 
-# Builds the iOS app locally on GitHub's macOS runner using EAS CLI --local.
-# No EAS cloud credits used — compilation happens directly on the runner.
-# After build, the IPA is uploaded as an artifact for manual TestFlight submission.
+# Builds the iOS app locally on GitHub's macOS runner.
+# Uses Xcode 16 with a patch for Expo SDK 55 compatibility.
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -21,7 +20,7 @@ on:
 
 jobs:
   build-ios:
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,29 +31,29 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Select Xcode 15.4
-        run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
-
-      - name: Verify Xcode
-        run: xcodebuild -version
-
       - name: Install Dependencies
         run: npm ci --legacy-peer-deps
+
+      - name: Patch Expo Modules for Xcode 16
+        run: |
+          # Patch expo-modules-core for Swift 6 / Xcode 16 compatibility
+          # Known issue: https://github.com/expo/expo/issues/32992
+          SWIFT_FILE="node_modules/expo-modules-core/ios/ReactDelegates/ExpoReactDelegate.swift"
+          if [ -f "$SWIFT_FILE" ]; then
+            # Create backup
+            cp "$SWIFT_FILE" "$SWIFT_FILE.bak"
+            # Apply patch: wrap UIViewController() in MainActor.assumeIsolated
+            sed -i '' 's/.first(where: { _ in true }) ?? UIViewController()/.first(where: { _ in true }) ?? MainActor.assumeIsolated { UIViewController() }/' "$SWIFT_FILE" 2>/dev/null || \
+            sed -i 's/.first(where: { _ in true }) ?? UIViewController()/.first(where: { _ in true }) ?? MainActor.assumeIsolated { UIViewController() }/' "$SWIFT_FILE"
+            echo "✅ Patched ExpoReactDelegate.swift"
+          fi
 
       - name: Setup EAS CLI
         run: |
           npm install -g eas-cli@latest
           eas --version
 
-      - name: Prebuild iOS (prepare native project)
-        run: npx expo prebuild --platform ios --clean
-
-      - name: Install CocoaPods
-        run: |
-          cd ios
-          pod install --repo-update
-
-      - name: Build iOS Locally (EAS)
+      - name: Build iOS Locally
         run: |
           mkdir -p build-output
           eas build --platform ios --profile production --local --output build-output/buildtrack.ipa --non-interactive
@@ -83,16 +82,11 @@ jobs:
             -p "${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" \
             --verbose
 
-      - name: Notify Success
-        if: success()
+      - name: Notify
         run: |
-          echo "✅ Build complete!"
-          if [ "${{ github.event.inputs.submit_to_testflight }}" == "true" ]; then
-            echo "   Submitted to TestFlight"
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Build complete!"
+            echo "   IPA: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           else
-            echo "   IPA artifact: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "❌ Build failed"
           fi
-
-      - name: Notify Failure
-        if: failure()
-        run: echo "❌ Build failed. Check logs above."
