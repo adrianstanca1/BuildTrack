@@ -227,9 +227,25 @@ class ApiClient {
     return this.request(`/notifications/${id}`, { method: 'DELETE' });
   }
 
-  // Dashboard
-  async getDashboardStats() {
-    return this.request('/dashboard/stats');
+  // Analytics
+  async getProjectAnalytics(projectId: string) {
+    return this.request(`/analytics/${projectId}`);
+  }
+
+  async getAnalyticsSummary() {
+    return this.request('/analytics/summary');
+  }
+
+  // Push Notifications
+  async registerPushToken(pushToken: string, platform?: string) {
+    return this.request('/push/register-token', {
+      method: 'POST',
+      body: JSON.stringify({ pushToken, platform }),
+    });
+  }
+
+  async unregisterPushToken() {
+    return this.request('/push/unregister-token', { method: 'POST' });
   }
 
   async getActivity() {
