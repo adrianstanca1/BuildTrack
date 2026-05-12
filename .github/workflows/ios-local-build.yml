@@ -1,7 +1,7 @@
 name: Build iOS IPA & Upload to TestFlight
 
 # Builds iOS app using EAS CLI --local on GitHub's macOS runner.
-# Uses npm postinstall + patch-package to patch expo-modules-core AFTER EAS re-installs dependencies.
+# Uses npm postinstall + patch-package to patch expo-modules-core and expo-router.
 # Uploads IPA artifact and optionally submits to TestFlight.
 
 env:
@@ -39,11 +39,10 @@ jobs:
         run: |
           echo "=== Checking patch status ==="
           ls -la patches/
-          echo "=== Verifying patch applies ==="
-          npx patch-package --dry-run || echo "Note: dry-run may show no changes if already patched"
-          echo "=== Checking patched files ==="
+          echo "=== Verifying expo-modules-core patches ==="
           grep -n "@MainActor" node_modules/expo-modules-core/ios/Core/Views/ViewDefinition.swift | head -3 || true
-          grep -n "@MainActor" node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift | head -3 || true
+          echo "=== Verifying expo-router patches ==="
+          grep -n "return .done" node_modules/expo-router/ios/Toolbar/RouterToolbarModule.swift | head -3 || true
 
       - name: Setup EAS CLI
         run: |
