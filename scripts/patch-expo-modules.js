@@ -3,10 +3,7 @@ const path = require('path');
 
 /**
  * Patch expo-modules-core for Xcode 16 / Swift 6 strict concurrency compatibility.
- * 
- * EAS --local re-runs npm install in a temp directory. Since patch-package only
- * patches the top-level copy, this script also patches the nested copy under
- * expo/node_modules/expo-modules-core.
+ * Accepts optional base path argument for patching specific installations (e.g. Pods directory).
  */
 
 function patchFile(filePath, search, replace) {
@@ -32,19 +29,26 @@ function patchFile(filePath, search, replace) {
   return true;
 }
 
-// Run patch-package first
-const { execSync } = require('child_process');
-try {
-  execSync('npx patch-package', { stdio: 'inherit' });
-} catch (e) {
-  console.log('⚠️  patch-package failed or no patches to apply');
+// Accept optional base path from command line (for Pods directory)
+const cliBasePath = process.argv[2];
+
+// Run patch-package first (only if no CLI path provided)
+if (!cliBasePath) {
+  const { execSync } = require('child_process');
+  try {
+    execSync('npx patch-package', { stdio: 'inherit' });
+  } catch (e) {
+    console.log('⚠️  patch-package failed or no patches to apply');
+  }
 }
 
-// Patch all expo-modules-core installations
-const possiblePaths = [
-  'node_modules/expo-modules-core/ios',
-  'node_modules/expo/node_modules/expo-modules-core/ios',
-];
+// Determine base paths to patch
+const possiblePaths = cliBasePath 
+  ? [cliBasePath]
+  : [
+      'node_modules/expo-modules-core/ios',
+      'node_modules/expo/node_modules/expo-modules-core/ios',
+    ];
 
 let patchedAny = false;
 

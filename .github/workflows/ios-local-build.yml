@@ -24,10 +24,10 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -49,30 +49,55 @@ jobs:
           npm install -g eas-cli@latest
           eas --version
 
-      - name: Build iOS Locally (EAS)
+      - name: Prebuild iOS project
+        run: npx expo prebuild --platform ios --clean
+
+      - name: Patch ExpoModulesCore in Pods
         run: |
-          mkdir -p build-output
-          eas build --platform ios --profile production --local --output build-output/buildtrack.ipa --non-interactive
+          # Patch the Pods source files directly
+          PODS_BASE="ios/Pods/ExpoModulesCore/ios"
+          if [ -d "$PODS_BASE" ]; then
+            echo "Found ExpoModulesCore in Pods — applying patches..."
+            node scripts/patch-expo-modules.js "$PODS_BASE"
+          else
+            echo "ExpoModulesCore not found at $PODS_BASE"
+            find ios/Pods -name "ExpoModulesCore" -type d 2>/dev/null | head -5
+          fi
+
+      - name: Build iOS with Xcode
+        run: |
+          cd ios
+          xcodebuild -workspace BuildTrack.xcworkspace \
+            -scheme BuildTrack \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            archive -archivePath build/BuildTrack.xcarchive
+          
+          # Export IPA
+          xcodebuild -exportArchive \
+            -archivePath build/BuildTrack.xcarchive \
+            -exportPath ../build-output \
+            -exportOptionsPlist exportOptions.plist
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
 
       - name: Verify IPA
         run: |
-          ls -la build-output/buildtrack.ipa
-          file build-output/buildtrack.ipa
+          ls -la build-output/*.ipa
+          file build-output/*.ipa
 
       - name: Upload IPA as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: buildtrack-ios-ipa
-          path: build-output/buildtrack.ipa
+          path: build-output/*.ipa
           retention-days: 7
 
       - name: Submit to TestFlight
         if: ${{ github.event.inputs.submit_to_testflight == 'true' }}
         run: |
           xcrun altool --upload-app \
-            -f build-output/buildtrack.ipa \
+            -f build-output/*.ipa \
             -t ios \
             -u "${{ secrets.APPLE_ID }}" \
             -p "${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" \
