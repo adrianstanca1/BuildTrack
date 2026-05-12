@@ -1,0 +1,77 @@
+name: Build iOS Locally on macOS & Submit to TestFlight
+
+# This workflow builds the iOS app locally on GitHub's macOS runner,
+# bypassing EAS cloud build credits. It uses eas build --local which
+# compiles the Xcode project directly on the runner.
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_build:
+        description: 'Bump build number before building'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  build-ios-local:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Setup EAS CLI
+        run: |
+          npm install -g eas-cli@latest
+          eas --version
+
+      - name: Bump Build Number
+        if: ${{ github.event.inputs.bump_build == 'true' }}
+        run: |
+          CURRENT=$(jq -r '.expo.version' app.json)
+          echo "Current version: $CURRENT"
+          # Let EAS auto-increment handle build number
+
+      - name: Build iOS Locally (EAS Local Build)
+        run: |
+          # Build locally on this macOS runner — no EAS cloud credits used
+          eas build --platform ios --profile production --local --output build-output/buildtrack.ipa --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Verify IPA
+        run: |
+          ls -la build-output/buildtrack.ipa
+          file build-output/buildtrack.ipa
+
+      - name: Upload to TestFlight
+        run: |
+          xcrun altool --upload-app \
+            -f build-output/buildtrack.ipa \
+            -t ios \
+            -u "${{ secrets.APPLE_ID }}" \
+            -p "${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" \
+            --verbose
+
+      - name: Notify Success
+        if: success()
+        run: echo "✅ BuildTrack submitted to TestFlight successfully!"
+
+      - name: Notify Failure
+        if: failure()
+        run: echo "❌ Build failed. Check logs above."

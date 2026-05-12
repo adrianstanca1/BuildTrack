@@ -57,7 +57,8 @@
       "ios": {
         "resourceClass": "medium"
       },
-      "channel": "production"
+      "channel": "production",
+      "autoIncrement": true
     },
     "production-android": {
       "extends": "production",
@@ -71,7 +72,8 @@
       "ios": {
         "resourceClass": "medium"
       },
-      "channel": "production-ios"
+      "channel": "production-ios",
+      "autoIncrement": true
     }
   },
   "submit": {
