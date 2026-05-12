@@ -36,6 +36,13 @@ jobs:
       - name: Install Dependencies
         run: npm ci --legacy-peer-deps
 
+      - name: Patch expo-modules-core for Xcode 16
+        run: |
+          echo "Applying expo-modules-core patches..."
+          node scripts/patch-expo-modules.js
+          echo "Verifying patches..."
+          grep -n "@MainActor" node_modules/expo-modules-core/ios/Core/Views/ViewDefinition.swift | head -3
+
       - name: Setup EAS CLI
         run: |
           npm install -g eas-cli@latest
