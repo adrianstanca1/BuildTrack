@@ -1,6 +1,7 @@
 /**
  * Zustand store for sync status and offline queue visibility.
- * Integrates with the offline sync engine (lib/offlineSync.ts).
+ * Integrates with the offline sync engine (lib/offlineSync.ts) and
+ * the API offline sync engine (lib/offlineApiSync.ts).
  */
 
 import { create } from 'zustand';
@@ -18,28 +19,36 @@ import {
   type SyncStatus,
   type MutationType,
 } from '../lib/offlineSync';
+import {
+  syncApiQueue,
+  getApiPendingCount,
+  getLastApiSyncTime,
+  isNetworkReachable,
+} from '../lib/offlineApiSync';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface SyncState {
-  // Status
   status: SyncStatus;
   isOnline: boolean;
   lastSyncTime: number | null;
   pendingCount: number;
+  apiPendingCount: number;
   errorMessage: string | null;
   lastSyncRelative: string;
 
-  // Actions
   setStatus: (status: SyncStatus) => void;
   setOnline: (online: boolean) => void;
   setLastSyncTime: (time: number) => void;
   setPendingCount: (count: number) => void;
+  setApiPendingCount: (count: number) => void;
   setError: (msg: string | null) => void;
 
-  // Operations
   queueMutation: (table: string, type: MutationType, payload: Record<string, any>) => Promise<void>;
+  queueApiMutation: (endpoint: string, method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', body: Record<string, any>) => Promise<void>;
   triggerSync: () => Promise<boolean>;
+  triggerApiSync: () => Promise<boolean>;
+  triggerFullSync: () => Promise<boolean>;
   checkConnection: () => Promise<boolean>;
   startAutoSync: () => void;
   stopAutoSync: () => void;
@@ -69,6 +78,7 @@ export const useSyncStore = create<SyncState>()(
       isOnline: true,
       lastSyncTime: null,
       pendingCount: 0,
+      apiPendingCount: 0,
       errorMessage: null,
       lastSyncRelative: 'Never',
 
@@ -76,34 +86,36 @@ export const useSyncStore = create<SyncState>()(
       setOnline: (isOnline) => set({ isOnline }),
       setLastSyncTime: (lastSyncTime) => set({ lastSyncTime }),
       setPendingCount: (pendingCount) => set({ pendingCount }),
+      setApiPendingCount: (apiPendingCount) => set({ apiPendingCount }),
       setError: (errorMessage) => set({ errorMessage }),
 
-      /**
-       * Queue a mutation for later sync (or immediate if online).
-       * Always writes to the offline queue first for durability.
-       */
       queueMutation: async (table, type, payload) => {
         await enqueueMutation(table, type, payload);
         const count = await getPendingCount();
         set({ pendingCount: count });
-
-        // Attempt immediate sync if online
         const online = await checkNetwork();
         if (online) {
           await get().triggerSync();
         }
       },
 
-      /**
-       * Manually trigger a sync cycle.
-       */
+      queueApiMutation: async (endpoint, method, body) => {
+        const { enqueueApiMutation } = await import('../lib/offlineApiSync');
+        await enqueueApiMutation(endpoint, method, body);
+        const count = await getApiPendingCount();
+        set({ apiPendingCount: count });
+        const online = await isNetworkReachable();
+        if (online) {
+          await get().triggerApiSync();
+        }
+      },
+
       triggerSync: async () => {
         set({ status: 'syncing', errorMessage: null });
         try {
           const results = await processQueue();
           const allOk = results.every((r) => r.success);
           const lastSync = await getLastSyncTime();
-
           set({
             status: allOk ? 'idle' : 'error',
             lastSyncTime: lastSync,
@@ -112,7 +124,6 @@ export const useSyncStore = create<SyncState>()(
               ? null
               : results.find((r) => !r.success)?.error || 'Sync failed',
           });
-
           return allOk;
         } catch (err: any) {
           set({ status: 'error', errorMessage: err?.message || 'Sync error' });
@@ -120,35 +131,69 @@ export const useSyncStore = create<SyncState>()(
         }
       },
 
-      /**
-       * Check network connectivity and update state.
-       */
+      triggerApiSync: async () => {
+        set({ status: 'syncing', errorMessage: null });
+        try {
+          const { success, results } = await syncApiQueue();
+          const lastSync = await getLastApiSyncTime();
+          set({
+            status: success ? 'idle' : 'error',
+            lastSyncTime: lastSync,
+            apiPendingCount: await getApiPendingCount(),
+            errorMessage: success
+              ? null
+              : results.find((r: any) => !r.success)?.error || 'API sync failed',
+          });
+          return success;
+        } catch (err: any) {
+          set({ status: 'error', errorMessage: err?.message || 'API sync error' });
+          return false;
+        }
+      },
+
+      triggerFullSync: async () => {
+        set({ status: 'syncing', errorMessage: null });
+        try {
+          const [supaResults, apiResults] = await Promise.all([
+            processQueue(),
+            syncApiQueue().then((r) => r.results),
+          ]);
+          const allOk =
+            supaResults.every((r: any) => r.success) &&
+            apiResults.every((r: any) => r.success);
+          const lastSync = await getLastSyncTime();
+          set({
+            status: allOk ? 'idle' : 'error',
+            lastSyncTime: lastSync,
+            pendingCount: await getPendingCount(),
+            apiPendingCount: await getApiPendingCount(),
+            errorMessage: allOk ? null : 'Some sync items failed',
+          });
+          return allOk;
+        } catch (err: any) {
+          set({ status: 'error', errorMessage: err?.message || 'Full sync error' });
+          return false;
+        }
+      },
+
       checkConnection: async () => {
-        const online = await checkNetwork();
+        const [supaOnline, apiOnline] = await Promise.all([
+          checkNetwork(),
+          isNetworkReachable(),
+        ]);
+        const online = supaOnline || apiOnline;
         set({ isOnline: online, status: online ? 'idle' : 'offline' });
         return online;
       },
 
-      /**
-       * Start automatic background sync polling.
-       * Hooks into the sync engine's status listener.
-       */
       startAutoSync: () => {
         startBackgroundSync();
-
-        // Wire engine status changes into Zustand state
         const unsub = onSyncStatusChange((status) => {
           set({ status });
         });
-
-        // Store unsub for cleanup (via module-level ref if needed)
-        // Here we attach it to the store instance for use in stopAutoSync
         (useSyncStore as any).__syncUnsub = unsub;
       },
 
-      /**
-       * Stop automatic background sync polling.
-       */
       stopAutoSync: () => {
         stopBackgroundSync();
         const unsub = (useSyncStore as any).__syncUnsub;
@@ -158,21 +203,20 @@ export const useSyncStore = create<SyncState>()(
         }
       },
 
-      /**
-       * Hydrate state from persisted/AsyncStorage on app startup.
-       */
       hydrate: async () => {
-        const [online, pending, lastSync] = await Promise.all([
+        const [online, pending, apiPending, lastSync] = await Promise.all([
           checkNetwork(),
           getPendingCount(),
+          getApiPendingCount(),
           getLastSyncTime(),
         ]);
         set({
           isOnline: online,
           pendingCount: pending,
+          apiPendingCount: apiPending,
           lastSyncTime: lastSync,
           lastSyncRelative: formatRelativeTime(lastSync),
-          status: online ? (pending > 0 ? 'syncing' : 'idle') : 'offline',
+          status: online ? (pending > 0 || apiPending > 0 ? 'syncing' : 'idle') : 'offline',
         });
       },
     }),
@@ -180,7 +224,6 @@ export const useSyncStore = create<SyncState>()(
       name: 'sync-storage',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
-        // Only persist lightweight meta-state
         lastSyncTime: state.lastSyncTime,
       }),
     }
@@ -198,7 +241,7 @@ export function selectIsOnline(state: SyncState): boolean {
 }
 
 export function selectPendingCount(state: SyncState): number {
-  return state.pendingCount;
+  return state.pendingCount + state.apiPendingCount;
 }
 
 export function selectLastSyncRelative(state: SyncState): string {
