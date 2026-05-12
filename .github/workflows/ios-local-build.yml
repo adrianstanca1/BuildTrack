@@ -35,7 +35,7 @@ jobs:
       - name: Select Xcode 15.4
         run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
 
-      - name: Verify Xcode Version
+      - name: Verify Xcode
         run: xcodebuild -version
 
       - name: Install Dependencies
@@ -46,7 +46,15 @@ jobs:
           npm install -g eas-cli@latest
           eas --version
 
-      - name: Build iOS Locally
+      - name: Prebuild iOS (prepare native project)
+        run: npx expo prebuild --platform ios --clean
+
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update
+
+      - name: Build iOS Locally (EAS)
         run: |
           mkdir -p build-output
           eas build --platform ios --profile production --local --output build-output/buildtrack.ipa --non-interactive
