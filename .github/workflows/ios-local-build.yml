@@ -1,8 +1,7 @@
 name: Build iOS on macOS (EAS Local) & Upload IPA
 
 # Builds the iOS app locally on GitHub's macOS runner using EAS CLI --local.
-# Xcode 16 has Swift 6 strict concurrency which breaks Expo SDK 55.
-# We patch expo-modules-core in BOTH node_modules locations before EAS builds.
+# Uses npm postinstall to automatically patch expo-modules-core for Xcode 16.
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -34,43 +33,7 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci --legacy-peer-deps
-
-      - name: Patch Expo Modules for Xcode 16
-        run: |
-          # Patch expo-modules-core in BOTH locations — EAS may use either
-          for CORE in "node_modules/expo-modules-core/ios" "node_modules/expo/node_modules/expo-modules-core/ios"; do
-            if [ ! -d "$CORE" ]; then
-              echo "⚠️  Skipping $CORE (not found)"
-              continue
-            fi
-            echo "🔧 Patching $CORE..."
-            
-            # Patch 1: ExpoReactDelegate.swift
-            FILE="$CORE/ReactDelegates/ExpoReactDelegate.swift"
-            if [ -f "$FILE" ]; then
-              sed -i '' 's/return windowScene?.keyWindow?.rootViewController?.children.first(where: { _ in true }) ?? UIViewController()/return windowScene?.keyWindow?.rootViewController?.children.first(where: { _ in true }) ?? MainActor.assumeIsolated { UIViewController() }/' "$FILE" 2>/dev/null || \
-              sed -i 's/return windowScene?.keyWindow?.rootViewController?.children.first(where: { _ in true }) ?? UIViewController()/return windowScene?.keyWindow?.rootViewController?.children.first(where: { _ in true }) ?? MainActor.assumeIsolated { UIViewController() }/' "$FILE"
-              echo "  ✅ ExpoReactDelegate.swift"
-            fi
-            
-            # Patch 2: PersistentFileLog.swift
-            FILE="$CORE/Core/Logging/PersistentFileLog.swift"
-            if [ -f "$FILE" ]; then
-              sed -i '' 's/filter: @escaping PersistentFileLogFilter/filter: @escaping @Sendable PersistentFileLogFilter/' "$FILE" 2>/dev/null || \
-              sed -i 's/filter: @escaping PersistentFileLogFilter/filter: @escaping @Sendable PersistentFileLogFilter/' "$FILE"
-              echo "  ✅ PersistentFileLog.swift"
-            fi
-            
-            # Patch 3: SwiftUIHostingView.swift
-            FILE="$CORE/Core/Views/SwiftUI/SwiftUIHostingView.swift"
-            if [ -f "$FILE" ]; then
-              sed -i '' 's/^public class ExpoSwiftUIHostingView:/@MainActor\npublic class ExpoSwiftUIHostingView:/' "$FILE" 2>/dev/null || \
-              sed -i 's/^public class ExpoSwiftUIHostingView:/@MainActor\npublic class ExpoSwiftUIHostingView:/' "$FILE"
-              echo "  ✅ SwiftUIHostingView.swift"
-            fi
-          done
-          
-          echo "All patches applied"
+        # postinstall script automatically patches expo-modules-core for Xcode 16
 
       - name: Setup EAS CLI
         run: |
