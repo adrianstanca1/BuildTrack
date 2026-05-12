@@ -252,6 +252,21 @@ class ApiClient {
     return this.request('/dashboard/activity');
   }
 
+  // Payments
+  async createPaymentIntent(invoiceId: string) {
+    return this.request('/payments/create-intent', {
+      method: 'POST',
+      body: JSON.stringify({ invoiceId }),
+    });
+  }
+
+  async confirmPayment(invoiceId: string) {
+    return this.request('/payments/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ invoiceId }),
+    });
+  }
+
   // Punch Items
   async getPunchItems(params?: { projectId?: string; status?: string }) {
     const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
