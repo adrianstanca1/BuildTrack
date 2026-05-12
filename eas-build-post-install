@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+
+# EAS Build post-install hook
+# Runs AFTER npm install but BEFORE Xcode build
+# Patches expo-modules-core for Xcode 16 / Swift 6 compatibility
+
+echo "🔧 [eas-build-post-install] Running expo-modules-core patches..."
+
+# Run patch-package if available
+if [ -f "node_modules/.bin/patch-package" ]; then
+    echo "  → Running patch-package..."
+    npx patch-package || echo "  ⚠️ patch-package failed (may already be patched)"
+fi
+
+# Also run manual patch script
+if [ -f "scripts/patch-expo-modules.js" ]; then
+    echo "  → Running manual patch script..."
+    node scripts/patch-expo-modules.js || echo "  ⚠️ manual patch failed"
+fi
+
+echo "✅ [eas-build-post-install] Complete"
