@@ -73,7 +73,7 @@ for (const basePath of possiblePaths) {
   patchedAny |= patchFile(
     path.join(basePath, 'Core/Views/SwiftUI/SwiftUIHostingView.swift'),
     'public override func updateProps(_ rawProps: [String: Any]) {',
-    'public override func updateProps(_ rawProps: [String: Any]) {  // @MainActor inherited from class'
+    '@MainActor public override func updateProps(_ rawProps: [String: Any]) {'
   );
   
   // === Patch 5: SwiftUIVirtualView.swift — childViewId ===
@@ -98,6 +98,14 @@ for (const basePath of possiblePaths) {
     path.join(basePath, 'Core/Views/ViewDefinition.swift'),
     'extension UIView: @MainActor AnyArgument {',
     '@MainActor\nextension UIView: AnyArgument {'
+  );
+
+  // === Patch 8: SwiftUIVirtualView.swift — ViewWrapper extension ===
+  // Error: main actor-isolated instance method 'getWrappedView' cannot satisfy nonisolated requirement
+  patchedAny |= patchFile(
+    path.join(basePath, 'Core/Views/SwiftUI/SwiftUIVirtualView.swift'),
+    'extension ExpoSwiftUI.SwiftUIVirtualView: @MainActor ExpoSwiftUI.ViewWrapper {',
+    '@MainActor\nextension ExpoSwiftUI.SwiftUIVirtualView: ExpoSwiftUI.ViewWrapper {'
   );
 }
 
