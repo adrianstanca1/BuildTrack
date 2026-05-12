@@ -7,7 +7,13 @@ const { withPodfile } = require('@expo/config-plugins');
  */
 function withPodfileSwiftConcurrencyFix(config) {
   return withPodfile(config, (config) => {
-    const podfile = config.modResults;
+    // modResults is { path, contents, didMerge, language }
+    const podfile = config.modResults.contents;
+    
+    if (typeof podfile !== 'string') {
+      console.log('[podfile-swift-concurrency] Warning: podfile.contents is not a string');
+      return config;
+    }
     
     // The hook to inject
     const hook = `
@@ -25,7 +31,10 @@ end
     
     // Only add if not already present
     if (!podfile.includes("SWIFT_STRICT_CONCURRENCY")) {
-      config.modResults = podfile + "\n" + hook;
+      config.modResults = {
+        ...config.modResults,
+        contents: podfile + "\n" + hook,
+      };
       console.log('[podfile-swift-concurrency] Added post_install hook to disable Swift 6 strict concurrency');
     } else {
       console.log('[podfile-swift-concurrency] Hook already present');
