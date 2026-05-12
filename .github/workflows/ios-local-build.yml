@@ -1,7 +1,7 @@
 name: Build iOS IPA & Upload to TestFlight
 
-# Build iOS app via expo prebuild + raw xcodebuild on GitHub macOS runner.
-# Patches expo-modules-core for Xcode 16 / Swift 6 before pod install.
+# Builds iOS app using EAS CLI --local on GitHub's macOS runner.
+# Uses eas-build-post-install hook to patch expo-modules-core after npm install.
 # Uploads IPA artifact and optionally submits to TestFlight.
 
 env:
@@ -36,74 +36,35 @@ jobs:
       - name: Install Dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Prebuild iOS project
-        run: npx expo prebuild --platform ios --clean
-
-      - name: Patch ExpoModulesCore (node_modules)
-        run: node scripts/patch-expo-modules.js
-
-      - name: Pod Install
-        run: cd ios && pod install --verbose
-
-      - name: Patch ExpoModulesCore (Pods)
+      - name: Setup EAS CLI
         run: |
-          PODS_PATH=$(find ios/Pods -path '*/ExpoModulesCore/ios' -type d | head -1)
-          if [ -n "$PODS_PATH" ]; then
-            echo "Found ExpoModulesCore at: $PODS_PATH"
-            node scripts/patch-expo-modules.js "$PODS_PATH"
-          else
-            echo "WARNING: ExpoModulesCore not found in Pods"
-          fi
+          npm install -g eas-cli@latest
+          eas --version
 
-      - name: Build iOS Archive
+      - name: Build iOS Locally (EAS)
         run: |
-          # Write API key to temp file for xcodebuild
-          mkdir -p /tmp/apple-api-key
-          echo "${APPLE_API_KEY}" | base64 -d > /tmp/apple-api-key/AuthKey_${APPLE_API_KEY_ID}.p8
-          
-          cd ios
-          xcodebuild -workspace BuildTrack.xcworkspace \
-            -scheme BuildTrack \
-            -configuration Release \
-            -destination 'generic/platform=iOS' \
-            DEVELOPMENT_TEAM="${DEVELOPMENT_TEAM}" \
-            CODE_SIGN_STYLE="Automatic" \
-            -authenticationKeyPath /tmp/apple-api-key/AuthKey_${APPLE_API_KEY_ID}.p8 \
-            -authenticationKeyID "${APPLE_API_KEY_ID}" \
-            -authenticationKeyIssuerID "${APPLE_API_ISSUER_ID}" \
-            -allowProvisioningUpdates \
-            archive -archivePath build/BuildTrack.xcarchive
+          mkdir -p build-output
+          eas build --platform ios --profile production --local --output build-output/buildtrack.ipa --non-interactive
         env:
-          DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
-          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
-          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
-          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
-
-      - name: Export IPA
-        run: |
-          cd ios
-          xcodebuild -exportArchive \
-            -archivePath build/BuildTrack.xcarchive \
-            -exportPath ../build-output \
-            -exportOptionsPlist ../exportOptions.plist
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Verify IPA
         run: |
-          ls -la build-output/*.ipa
-          file build-output/*.ipa
+          ls -la build-output/buildtrack.ipa
+          file build-output/buildtrack.ipa
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v7
         with:
           name: buildtrack-ios-ipa
-          path: build-output/*.ipa
+          path: build-output/buildtrack.ipa
           retention-days: 7
 
       - name: Submit to TestFlight
         if: ${{ github.event.inputs.submit_to_testflight == 'true' }}
         run: |
           xcrun altool --upload-app \
-            -f build-output/*.ipa \
+            -f build-output/buildtrack.ipa \
             -t ios \
             -u "${{ secrets.APPLE_ID }}" \
             -p "${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" \
