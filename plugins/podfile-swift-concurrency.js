@@ -1,21 +1,51 @@
 const { withPodfile } = require('@expo/config-plugins');
 
 /**
- * Config plugin to add a post_install hook to the Podfile.
- * Sets SWIFT_STRICT_CONCURRENCY=minimal for ALL targets (including Pods),
- * which prevents Xcode 16 / Swift 6 strict concurrency errors.
+ * Config plugin to disable Swift 6 strict concurrency in the Podfile.
+ * Merges settings into the EXISTING post_install block (Ruby only allows one).
  */
 function withPodfileSwiftConcurrencyFix(config) {
   return withPodfile(config, (config) => {
-    // modResults is { path, contents, didMerge, language }
-    const podfile = config.modResults.contents;
+    const podfile = config.modResults.contents || config.modResults;
     
     if (typeof podfile !== 'string') {
       console.log('[podfile-swift-concurrency] Warning: podfile.contents is not a string');
       return config;
     }
     
-    // The hook to inject
+    // Swift concurrency settings to inject
+    const settings = `
+    # Swift 6 strict concurrency fix for Xcode 16
+    target.build_configurations.each do |config|
+      config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
+      config.build_settings['SWIFT_VERSION'] = '5.0'
+      config.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
+      config.build_settings['SWIFT_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
+    end
+`;
+    
+    // Check if already patched
+    if (podfile.includes("SWIFT_STRICT_CONCURRENCY")) {
+      console.log('[podfile-swift-concurrency] Already patched');
+      return config;
+    }
+    
+    // Find existing post_install block and inject settings inside it
+    // Look for "post_install do |installer|" and inject after it
+    const postInstallMatch = podfile.match(/(post_install\s+do\s*\|installer\|)/);
+    if (postInstallMatch) {
+      const insertIndex = postInstallMatch.index + postInstallMatch[1].length;
+      const before = podfile.slice(0, insertIndex);
+      const after = podfile.slice(insertIndex);
+      config.modResults = {
+        ...config.modResults,
+        contents: before + "\n" + settings + after,
+      };
+      console.log('[podfile-swift-concurrency] Merged Swift concurrency settings into existing post_install block');
+      return config;
+    }
+    
+    // If no post_install block exists, add one at the end
     const hook = `
 post_install do |installer|
   installer.pods_project.targets.each do |target|
@@ -29,17 +59,11 @@ post_install do |installer|
 end
 `;
     
-    // Only add if not already present
-    if (!podfile.includes("SWIFT_STRICT_CONCURRENCY")) {
-      config.modResults = {
-        ...config.modResults,
-        contents: podfile + "\n" + hook,
-      };
-      console.log('[podfile-swift-concurrency] Added post_install hook to disable Swift 6 strict concurrency');
-    } else {
-      console.log('[podfile-swift-concurrency] Hook already present');
-    }
-    
+    config.modResults = {
+      ...config.modResults,
+      contents: podfile + "\n" + hook,
+    };
+    console.log('[podfile-swift-concurrency] Added post_install block with Swift concurrency settings');
     return config;
   });
 }
