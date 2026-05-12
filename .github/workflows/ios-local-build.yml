@@ -2,6 +2,7 @@ name: Build iOS IPA & Upload to TestFlight
 
 # Builds iOS app using EAS CLI --local on GitHub's macOS runner.
 # Uses npm postinstall + patch-package to patch expo-modules-core and expo-router.
+# Explicitly selects Xcode 26.3 to support iOS 26 APIs.
 # Uploads IPA artifact and optionally submits to TestFlight.
 
 env:
@@ -25,6 +26,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Select Xcode 26.3
+        run: |
+          echo "Available Xcode versions:"
+          ls /Applications/ | grep Xcode | sort
+          echo ""
+          echo "Selecting Xcode 26.3..."
+          sudo xcode-select -s "/Applications/Xcode_26.3.app/Contents/Developer"
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          xcrun --sdk iphoneos --show-sdk-build-version
 
       - name: Setup Node
         uses: actions/setup-node@v6
