@@ -13,15 +13,19 @@ function withPodfileSwiftConcurrencyFix(config) {
       return config;
     }
     
-    // Swift concurrency settings to inject
+    // Complete Swift concurrency settings block
+    // Must include installer.pods_project.targets.each wrapper since 'target' variable
+    // only exists inside that loop in Ruby.
     const settings = `
-    # Swift 6 strict concurrency fix for Xcode 16
+  # Swift 6 strict concurrency fix for Xcode 16
+  installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
       config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
       config.build_settings['SWIFT_VERSION'] = '5.0'
       config.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
       config.build_settings['SWIFT_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
     end
+  end
 `;
     
     // Check if already patched
@@ -31,7 +35,6 @@ function withPodfileSwiftConcurrencyFix(config) {
     }
     
     // Find existing post_install block and inject settings inside it
-    // Look for "post_install do |installer|" and inject after it
     const postInstallMatch = podfile.match(/(post_install\s+do\s*\|installer\|)/);
     if (postInstallMatch) {
       const insertIndex = postInstallMatch.index + postInstallMatch[1].length;
