@@ -1,10 +1,11 @@
-name: Build iOS on macOS (EAS Local) & Upload IPA
+name: Build iOS IPA & Upload to TestFlight
 
-# Builds the iOS app locally on GitHub's macOS runner using EAS CLI --local.
-# Patches expo-modules-core Swift files BEFORE EAS build to fix Xcode 16/Swift 6 errors.
-# Uses patch-package (runs on npm install) + manual fallback for nested node_modules.
+# Build iOS app via expo prebuild + raw xcodebuild on GitHub macOS runner.
+# Patches expo-modules-core for Xcode 16 / Swift 6 before pod install.
+# Uploads IPA artifact and optionally submits to TestFlight.
 
 env:
+  DEVELOPMENT_TEAM: 4G3G5MX9BH
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
@@ -35,64 +36,54 @@ jobs:
       - name: Install Dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Patch nested expo-modules-core (expo sub-dependency)
-        run: |
-          if [ -d "node_modules/expo/node_modules/expo-modules-core/ios" ]; then
-            echo "Found nested expo-modules-core — applying patches..."
-            node scripts/patch-expo-modules.js
-          else
-            echo "No nested expo-modules-core found — patch-package handled it"
-          fi
-
-      - name: Setup EAS CLI
-        run: |
-          npm install -g eas-cli@latest
-          eas --version
-
       - name: Prebuild iOS project
         run: npx expo prebuild --platform ios --clean
 
-      - name: Patch ExpoModulesCore in node_modules
+      - name: Patch ExpoModulesCore (node_modules)
         run: node scripts/patch-expo-modules.js
 
       - name: Pod Install
         run: cd ios && pod install --verbose
 
-      - name: Patch ExpoModulesCore in Pods
+      - name: Patch ExpoModulesCore (Pods)
         run: |
-          # Find actual Pods path
           PODS_PATH=$(find ios/Pods -path '*/ExpoModulesCore/ios' -type d | head -1)
           if [ -n "$PODS_PATH" ]; then
             echo "Found ExpoModulesCore at: $PODS_PATH"
             node scripts/patch-expo-modules.js "$PODS_PATH"
           else
             echo "WARNING: ExpoModulesCore not found in Pods"
-            find ios/Pods -name "ExpoModulesCore" -type d 2>/dev/null | head -10
           fi
 
-      - name: Build iOS with Xcode
+      - name: Build iOS Archive
         run: |
           cd ios
           xcodebuild -workspace BuildTrack.xcworkspace \
             -scheme BuildTrack \
             -configuration Release \
             -destination 'generic/platform=iOS' \
-            archive -archivePath build/BuildTrack.xcarchive
-          
-          # Export IPA
+            DEVELOPMENT_TEAM="${DEVELOPMENT_TEAM}" \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="BuildTrack App Store" \
+            archive -archivePath build/BuildTrack.xcarchive \
+            -allowProvisioningUpdates
+        env:
+          DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+
+      - name: Export IPA
+        run: |
+          cd ios
           xcodebuild -exportArchive \
             -archivePath build/BuildTrack.xcarchive \
             -exportPath ../build-output \
             -exportOptionsPlist ../exportOptions.plist
-        env:
-          DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
 
       - name: Verify IPA
         run: |
           ls -la build-output/*.ipa
           file build-output/*.ipa
 
-      - name: Upload IPA as Artifact
+      - name: Upload IPA Artifact
         uses: actions/upload-artifact@v7
         with:
           name: buildtrack-ios-ipa
