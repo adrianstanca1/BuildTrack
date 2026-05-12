@@ -69,9 +69,6 @@
       "expo-font",
       "expo-image",
       [
-        "./plugins/disable-strict-concurrency.js"
-      ],
-      [
         "./plugins/podfile-swift-concurrency.js"
       ]
     ],
