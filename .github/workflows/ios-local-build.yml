@@ -1,8 +1,8 @@
-name: Build iOS Locally on macOS & Submit to TestFlight
+name: Build iOS on macOS (EAS Local) & Upload IPA
 
-# This workflow builds the iOS app locally on GitHub's macOS runner,
-# bypassing EAS cloud build credits. It uses eas build --local which
-# compiles the Xcode project directly on the runner.
+# Builds the iOS app locally on GitHub's macOS runner using EAS CLI --local.
+# No EAS cloud credits used — compilation happens directly on the runner.
+# After build, the IPA is uploaded as an artifact for manual TestFlight submission.
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -10,17 +10,17 @@ env:
 on:
   workflow_dispatch:
     inputs:
-      bump_build:
-        description: 'Bump build number before building'
+      submit_to_testflight:
+        description: 'Submit IPA to TestFlight after build?'
         required: false
-        default: 'true'
+        default: 'false'
         type: choice
         options:
           - 'true'
           - 'false'
 
 jobs:
-  build-ios-local:
+  build-ios:
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -40,16 +40,9 @@ jobs:
           npm install -g eas-cli@latest
           eas --version
 
-      - name: Bump Build Number
-        if: ${{ github.event.inputs.bump_build == 'true' }}
-        run: |
-          CURRENT=$(jq -r '.expo.version' app.json)
-          echo "Current version: $CURRENT"
-
-      - name: Build iOS Locally (EAS Local Build)
+      - name: Build iOS Locally
         run: |
           mkdir -p build-output
-          # Build locally on this macOS runner — no EAS cloud credits used
           eas build --platform ios --profile production --local --output build-output/buildtrack.ipa --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
@@ -66,7 +59,8 @@ jobs:
           path: build-output/buildtrack.ipa
           retention-days: 7
 
-      - name: Upload to TestFlight
+      - name: Submit to TestFlight
+        if: ${{ github.event.inputs.submit_to_testflight == 'true' && secrets.APPLE_APP_SPECIFIC_PASSWORD != '' }}
         run: |
           xcrun altool --upload-app \
             -f build-output/buildtrack.ipa \
@@ -77,8 +71,14 @@ jobs:
 
       - name: Notify Success
         if: success()
-        run: echo "✅ BuildTrack submitted to TestFlight successfully!"
+        run: |
+          echo "✅ Build complete!"
+          if [ "${{ github.event.inputs.submit_to_testflight }}" == "true" ]; then
+            echo "   Submitted to TestFlight"
+          else
+            echo "   IPA artifact: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
 
       - name: Notify Failure
         if: failure()
-        run: echo "❌ Build or submission failed. Check logs above."
+        run: echo "❌ Build failed. Check logs above."
