@@ -60,7 +60,7 @@ jobs:
           retention-days: 7
 
       - name: Submit to TestFlight
-        if: ${{ github.event.inputs.submit_to_testflight == 'true' && secrets.APPLE_APP_SPECIFIC_PASSWORD != '' }}
+        if: ${{ github.event.inputs.submit_to_testflight == 'true' }}
         run: |
           xcrun altool --upload-app \
             -f build-output/buildtrack.ipa \
