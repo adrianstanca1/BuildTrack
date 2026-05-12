@@ -45,10 +45,10 @@ jobs:
         run: |
           CURRENT=$(jq -r '.expo.version' app.json)
           echo "Current version: $CURRENT"
-          # Let EAS auto-increment handle build number
 
       - name: Build iOS Locally (EAS Local Build)
         run: |
+          mkdir -p build-output
           # Build locally on this macOS runner — no EAS cloud credits used
           eas build --platform ios --profile production --local --output build-output/buildtrack.ipa --non-interactive
         env:
@@ -58,6 +58,13 @@ jobs:
         run: |
           ls -la build-output/buildtrack.ipa
           file build-output/buildtrack.ipa
+
+      - name: Upload IPA as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: buildtrack-ios-ipa
+          path: build-output/buildtrack.ipa
+          retention-days: 7
 
       - name: Upload to TestFlight
         run: |
@@ -74,4 +81,4 @@ jobs:
 
       - name: Notify Failure
         if: failure()
-        run: echo "❌ Build failed. Check logs above."
+        run: echo "❌ Build or submission failed. Check logs above."
