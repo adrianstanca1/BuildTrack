@@ -1,8 +1,8 @@
 diff --git a/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift b/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift
-index 8938578..def82a2 100644
+index 5ddcbb6..040bc11 100644
 --- a/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift
 +++ b/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift
-@@ -69,7 +69,7 @@ public class PersistentFileLog {
+@@ -71,7 +71,7 @@ public class PersistentFileLog {
    /**
     Filter existing entries and remove ones where filter(entry) == false
     */
@@ -12,7 +12,7 @@ index 8938578..def82a2 100644
        self.ensureFileExists()
        do {
 diff --git a/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift b/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift
-index b58d7c0..e6522f3 100644
+index d4ff7a9..f6ad5ad 100644
 --- a/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift
 +++ b/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift
 @@ -42,7 +42,7 @@ extension ExpoSwiftUI {
@@ -24,7 +24,7 @@ index b58d7c0..e6522f3 100644
      /**
       Props object that stores all the props for this particular view.
       It's an environment object that is observed by the content view.
-@@ -108,7 +108,7 @@ extension ExpoSwiftUI {
+@@ -110,7 +110,7 @@ extension ExpoSwiftUI {
      /**
       Updates the environment object with props, based on the given dictionary with raw props.
       */
@@ -34,19 +34,19 @@ index b58d7c0..e6522f3 100644
          log.error("AppContext is not available, view props cannot be updated for \(ContentView.self)")
          return
 diff --git a/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift b/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift
-index c5c2f4c..80041ef 100644
+index 6d65323..295c7b7 100644
 --- a/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift
 +++ b/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift
-@@ -127,7 +127,7 @@ extension ExpoSwiftUI {
+@@ -137,7 +137,7 @@ extension ExpoSwiftUI {
        children.insert(child, at: index)
  
        props.children = children
 -      props.objectWillChange.send()
-+      MainActor.assumeIsolated { MainActor.assumeIsolated { props.objectWillChange.send() } }
++      MainActor.assumeIsolated { props.objectWillChange.send() }
      }
  
      /**
-@@ -138,7 +138,7 @@ extension ExpoSwiftUI {
+@@ -148,7 +148,7 @@ extension ExpoSwiftUI {
        childComponentView.removeFromSuperview()
  
        let childViewId: ObjectIdentifier
@@ -55,6 +55,16 @@ index c5c2f4c..80041ef 100644
          childViewId = child.id
        } else {
          childViewId = ObjectIdentifier(childComponentView)
+@@ -193,7 +193,8 @@ extension ExpoSwiftUI {
+ 
+ // MARK: - ViewWrapper
+ 
+-extension ExpoSwiftUI.SwiftUIVirtualView: @MainActor ExpoSwiftUI.ViewWrapper {
++@MainActor
++extension ExpoSwiftUI.SwiftUIVirtualView: ExpoSwiftUI.ViewWrapper {
+   func getWrappedView() -> Any {
+     if let wrapper = contentView as? ExpoSwiftUI.ViewWrapper {
+       return wrapper.getWrappedView()
 diff --git a/node_modules/expo-modules-core/ios/Core/Views/ViewDefinition.swift b/node_modules/expo-modules-core/ios/Core/Views/ViewDefinition.swift
 index 5dc73e3..67b7b8e 100644
 --- a/node_modules/expo-modules-core/ios/Core/Views/ViewDefinition.swift

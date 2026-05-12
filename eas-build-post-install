@@ -7,13 +7,13 @@ set -e
 
 echo "🔧 [eas-build-post-install] Running expo-modules-core patches..."
 
-# Run patch-package if available
-if [ -f "node_modules/.bin/patch-package" ]; then
-    echo "  → Running patch-package..."
-    npx patch-package || echo "  ⚠️ patch-package failed (may already be patched)"
+# Run patch-package
+if [ -f "patches/expo-modules-core+55.0.25.patch" ]; then
+    echo "  → Applying patch-package patches..."
+    npx patch-package || echo "  ⚠️ patch-package failed"
 fi
 
-# Also run manual patch script
+# Also run manual patch script for any files patch-package missed
 if [ -f "scripts/patch-expo-modules.js" ]; then
     echo "  → Running manual patch script..."
     node scripts/patch-expo-modules.js || echo "  ⚠️ manual patch failed"
