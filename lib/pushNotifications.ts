@@ -4,6 +4,7 @@
  */
 
 import * as Notifications from 'expo-notifications';
+// @ts-ignore — expo-device types resolve at build time via Expo
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { apiClient } from '../services/api';
@@ -20,12 +21,13 @@ export async function registerForPushNotifications(): Promise<string | null> {
     return null;
   }
 
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  const permissionResponse = await Notifications.getPermissionsAsync();
+  const existingStatus = (permissionResponse as any).status ?? 'undetermined';
   let finalStatus = existingStatus;
 
   if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
+    const requestResponse = await Notifications.requestPermissionsAsync();
+    finalStatus = (requestResponse as any).status ?? 'undetermined';
   }
 
   if (finalStatus !== 'granted') {
@@ -35,8 +37,10 @@ export async function registerForPushNotifications(): Promise<string | null> {
 
   // Configure notification behaviour
   Notifications.setNotificationHandler({
-    handleNotification: async () => ({
+    handleNotification: async (): Promise<any> => ({
       shouldShowAlert: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
       shouldPlaySound: true,
       shouldSetBadge: true,
     }),
