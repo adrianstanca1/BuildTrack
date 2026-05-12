@@ -33,12 +33,7 @@ jobs:
           cache: npm
 
       - name: Install Dependencies
-        run: npm install --legacy-peer-deps
-
-      - name: Verify patch-package ran
-        run: |
-          ls -la node_modules/expo-modules-core/ios/Core/Views/ViewDefinition.swift
-          grep -n "@MainActor" node_modules/expo-modules-core/ios/Core/Views/ViewDefinition.swift | head -3
+        run: npm ci --legacy-peer-deps
 
       - name: Patch nested expo-modules-core (expo sub-dependency)
         run: |
