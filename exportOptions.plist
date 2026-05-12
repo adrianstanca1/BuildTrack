@@ -5,12 +5,9 @@
     <key>method</key>
     <string>app-store</string>
     <key>teamID</key>
-    <string>YOUR_TEAM_ID</string>
-    <key>provisioningProfiles</key>
-    <dict>
-        <key>ro.stancainvest.buildtrack</key>
-        <string>BuildTrack App Store</string>
-    </dict>
+    <string>4G3G5MX9BH</string>
+    <key>signingStyle</key>
+    <string>automatic</string>
     <key>uploadBitcode</key>
     <false/>
     <key>uploadSymbols</key>
