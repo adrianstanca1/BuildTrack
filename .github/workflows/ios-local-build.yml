@@ -52,16 +52,22 @@ jobs:
       - name: Prebuild iOS project
         run: npx expo prebuild --platform ios --clean
 
+      - name: Patch ExpoModulesCore in node_modules
+        run: node scripts/patch-expo-modules.js
+
+      - name: Pod Install
+        run: cd ios && pod install --verbose
+
       - name: Patch ExpoModulesCore in Pods
         run: |
-          # Patch the Pods source files directly
-          PODS_BASE="ios/Pods/ExpoModulesCore/ios"
-          if [ -d "$PODS_BASE" ]; then
-            echo "Found ExpoModulesCore in Pods — applying patches..."
-            node scripts/patch-expo-modules.js "$PODS_BASE"
+          # Find actual Pods path
+          PODS_PATH=$(find ios/Pods -path '*/ExpoModulesCore/ios' -type d | head -1)
+          if [ -n "$PODS_PATH" ]; then
+            echo "Found ExpoModulesCore at: $PODS_PATH"
+            node scripts/patch-expo-modules.js "$PODS_PATH"
           else
-            echo "ExpoModulesCore not found at $PODS_BASE"
-            find ios/Pods -name "ExpoModulesCore" -type d 2>/dev/null | head -5
+            echo "WARNING: ExpoModulesCore not found in Pods"
+            find ios/Pods -name "ExpoModulesCore" -type d 2>/dev/null | head -10
           fi
 
       - name: Build iOS with Xcode
@@ -77,7 +83,7 @@ jobs:
           xcodebuild -exportArchive \
             -archivePath build/BuildTrack.xcarchive \
             -exportPath ../build-output \
-            -exportOptionsPlist exportOptions.plist
+            -exportOptionsPlist ../exportOptions.plist
         env:
           DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
 
