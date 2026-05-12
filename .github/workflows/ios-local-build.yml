@@ -2,7 +2,7 @@ name: Build iOS on macOS (EAS Local) & Upload IPA
 
 # Builds the iOS app locally on GitHub's macOS runner using EAS CLI --local.
 # Xcode 16 has Swift 6 strict concurrency which breaks Expo SDK 55.
-# We disable strict concurrency via build settings instead of patching code.
+# We patch the SOURCE files in node_modules before EAS re-runs pod install.
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -35,68 +35,45 @@ jobs:
       - name: Install Dependencies
         run: npm ci --legacy-peer-deps
 
+      - name: Patch Expo Modules for Xcode 16
+        run: |
+          # Patch SOURCE files in node_modules — EAS will copy these to ios/Pods/ during its internal pod install
+          CORE="node_modules/expo-modules-core/ios"
+          
+          # Patch 1: ExpoReactDelegate.swift — UIViewController() isolation
+          FILE="$CORE/ReactDelegates/ExpoReactDelegate.swift"
+          if [ -f "$FILE" ]; then
+            sed -i '' 's/return windowScene?.keyWindow?.rootViewController?.children.first(where: { _ in true }) ?? UIViewController()/return windowScene?.keyWindow?.rootViewController?.children.first(where: { _ in true }) ?? MainActor.assumeIsolated { UIViewController() }/' "$FILE" 2>/dev/null || \
+            sed -i 's/return windowScene?.keyWindow?.rootViewController?.children.first(where: { _ in true }) ?? UIViewController()/return windowScene?.keyWindow?.rootViewController?.children.first(where: { _ in true }) ?? MainActor.assumeIsolated { UIViewController() }/' "$FILE"
+            echo "✅ Patched ExpoReactDelegate.swift"
+          fi
+          
+          # Patch 2: PersistentFileLog.swift — filter non-sendable type
+          FILE="$CORE/Core/Logging/PersistentFileLog.swift"
+          if [ -f "$FILE" ]; then
+            # Replace filter parameter with @Sendable closure
+            sed -i '' 's/filter: @escaping PersistentFileLogFilter/filter: @escaping @Sendable PersistentFileLogFilter/' "$FILE" 2>/dev/null || \
+            sed -i 's/filter: @escaping PersistentFileLogFilter/filter: @escaping @Sendable PersistentFileLogFilter/' "$FILE"
+            echo "✅ Patched PersistentFileLog.swift"
+          fi
+          
+          # Patch 3: SwiftUIHostingView.swift — @MainActor protocol conformance
+          FILE="$CORE/Core/Views/SwiftUI/SwiftUIHostingView.swift"
+          if [ -f "$FILE" ]; then
+            # Add @preconcurrency to protocol conformance or @MainActor to class
+            sed -i '' 's/^public class ExpoSwiftUIHostingView:/@MainActor\npublic class ExpoSwiftUIHostingView:/' "$FILE" 2>/dev/null || \
+            sed -i 's/^public class ExpoSwiftUIHostingView:/@MainActor\npublic class ExpoSwiftUIHostingView:/' "$FILE"
+            echo "✅ Patched SwiftUIHostingView.swift"
+          fi
+          
+          echo "All patches applied to node_modules source files"
+
       - name: Setup EAS CLI
         run: |
           npm install -g eas-cli@latest
           eas --version
 
-      - name: Prebuild iOS
-        run: npx expo prebuild --platform ios --clean
-
-      - name: Disable Swift Strict Concurrency
-        run: |
-          # Xcode 16's Swift 6 strict concurrency breaks Expo SDK 55
-          # Disable it via build settings in the Xcode project
-          cd ios
-          
-          # Add SWIFT_STRICT_CONCURRENCY = no to project.pbxproj
-          # This disables Swift 6 strict concurrency checks
-          ruby -e '
-            file = "BuildTrack.xcodeproj/project.pbxproj"
-            content = File.read(file)
-            
-            # Find GCC_PREPROCESSOR_DEFINITIONS and add SWIFT_STRICT_CONCURRENCY=no nearby
-            # Or add a new build settings section
-            if content.include?("SWIFT_STRICT_CONCURRENCY")
-              content.gsub!(/SWIFT_STRICT_CONCURRENCY = .*;/, "SWIFT_STRICT_CONCURRENCY = no;")
-              puts "Updated SWIFT_STRICT_CONCURRENCY to no"
-            else
-              # Add to all build settings blocks
-              content.gsub!(/(buildSettings = \{)/, "\1\\n\\t\\t\\t\\tSWIFT_STRICT_CONCURRENCY = no;")
-              puts "Added SWIFT_STRICT_CONCURRENCY = no"
-            end
-            
-            File.write(file, content)
-          '
-          
-          # Also disable in Podfile for CocoaPods dependencies
-          if [ -f "Podfile" ]; then
-            echo "Adding post_install hook to disable strict concurrency..."
-            ruby -e '
-              file = "Podfile"
-              content = File.read(file)
-              
-              # Add post_install hook if not present
-              unless content.include?("post_install")
-                hook = <<-HOOK
-              
-              post_install do |installer|
-                installer.pods_project.targets.each do |target|
-                  target.build_configurations.each do |config|
-                    config.build_settings["SWIFT_STRICT_CONCURRENCY"] = "no"
-                  end
-                end
-              end
-              HOOK
-                content += hook
-                puts "Added post_install hook"
-              end
-              
-              File.write(file, content)
-            '
-          fi
-
-      - name: Build iOS Locally
+      - name: Build iOS Locally (EAS)
         run: |
           mkdir -p build-output
           eas build --platform ios --profile production --local --output build-output/buildtrack.ipa --non-interactive
@@ -126,8 +103,9 @@ jobs:
             --verbose
 
       - name: Notify
+        if: always()
         run: |
-          if [ "${{ job.status }}" == "success" ]; then
+          if [ "${{ job.status }}" = "success" ]; then
             echo "✅ Build complete!"
             echo "   IPA: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           else
