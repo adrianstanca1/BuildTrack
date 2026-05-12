@@ -69,7 +69,7 @@
       "expo-font",
       "expo-image",
       [
-        "./plugins/xcode-swift-concurrency-patch.js"
+        "./plugins/podfile-swift-concurrency.js"
       ]
     ],
     "extra": {
