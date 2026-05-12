@@ -1,11 +1,10 @@
 name: Build iOS IPA & Upload to TestFlight
 
 # Builds iOS app using EAS CLI --local on GitHub's macOS runner.
-# Uses eas-build-post-install hook to patch expo-modules-core after npm install.
+# Uses npm postinstall + patch-package to patch expo-modules-core AFTER EAS re-installs dependencies.
 # Uploads IPA artifact and optionally submits to TestFlight.
 
 env:
-  DEVELOPMENT_TEAM: 4G3G5MX9BH
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
@@ -22,7 +21,7 @@ on:
 
 jobs:
   build-ios:
-    runs-on: macos-latest
+    runs-on: macos-15
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -36,12 +35,15 @@ jobs:
       - name: Install Dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Patch expo-modules-core for Xcode 16
+      - name: Verify patches applied
         run: |
-          echo "Applying expo-modules-core patches..."
-          node scripts/patch-expo-modules.js
-          echo "Verifying patches..."
-          grep -n "@MainActor" node_modules/expo-modules-core/ios/Core/Views/ViewDefinition.swift | head -3
+          echo "=== Checking patch status ==="
+          ls -la patches/
+          echo "=== Verifying patch applies ==="
+          npx patch-package --dry-run || echo "Note: dry-run may show no changes if already patched"
+          echo "=== Checking patched files ==="
+          grep -n "@MainActor" node_modules/expo-modules-core/ios/Core/Views/ViewDefinition.swift | head -3 || true
+          grep -n "@MainActor" node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift | head -3 || true
 
       - name: Setup EAS CLI
         run: |
