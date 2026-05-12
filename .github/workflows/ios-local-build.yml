@@ -2,6 +2,7 @@ name: Build iOS on macOS (EAS Local) & Upload IPA
 
 # Builds the iOS app locally on GitHub's macOS runner using EAS CLI --local.
 # Patches expo-modules-core Swift files BEFORE EAS build to fix Xcode 16/Swift 6 errors.
+# Uses patch-package (runs on npm install) + manual fallback for nested node_modules.
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -32,10 +33,21 @@ jobs:
           cache: npm
 
       - name: Install Dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm install --legacy-peer-deps
 
-      - name: Patch expo-modules-core for Xcode 16
-        run: node scripts/patch-expo-modules.js
+      - name: Verify patch-package ran
+        run: |
+          ls -la node_modules/expo-modules-core/ios/Core/Views/ViewDefinition.swift
+          grep -n "@MainActor" node_modules/expo-modules-core/ios/Core/Views/ViewDefinition.swift | head -3
+
+      - name: Patch nested expo-modules-core (expo sub-dependency)
+        run: |
+          if [ -d "node_modules/expo/node_modules/expo-modules-core/ios" ]; then
+            echo "Found nested expo-modules-core — applying patches..."
+            node scripts/patch-expo-modules.js
+          else
+            echo "No nested expo-modules-core found — patch-package handled it"
+          fi
 
       - name: Setup EAS CLI
         run: |
