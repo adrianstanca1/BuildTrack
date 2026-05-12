@@ -1,0 +1,17 @@
+diff --git a/node_modules/expo-router/ios/Toolbar/RouterToolbarModule.swift b/node_modules/expo-router/ios/Toolbar/RouterToolbarModule.swift
+index 1bee03c..9dfe5ee 100644
+--- a/node_modules/expo-router/ios/Toolbar/RouterToolbarModule.swift
++++ b/node_modules/expo-router/ios/Toolbar/RouterToolbarModule.swift
+@@ -94,11 +94,7 @@ enum BarItemStyle: String, Enumerable {
+     case .plain:
+       return .plain
+     case .prominent:
+-      if #available(iOS 26.0, *) {
+-        return .prominent
+-      } else {
+-        return .done
+-      }
++      return .done
+     }
+   }
+ }
