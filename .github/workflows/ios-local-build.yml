@@ -24,7 +24,7 @@ jobs:
     runs-on: macos-15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Select Xcode 26.3
         run: |
@@ -34,7 +34,7 @@ jobs:
           xcrun --sdk iphoneos --show-sdk-version
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
@@ -69,7 +69,7 @@ jobs:
           file build-output/buildtrack.ipa
 
       - name: Upload IPA Artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: buildtrack-ios-ipa
           path: build-output/buildtrack.ipa
