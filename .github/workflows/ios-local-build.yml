@@ -1,9 +1,8 @@
 name: Build iOS IPA & Upload to TestFlight
 
-# Builds iOS app using EAS CLI --local on GitHub's macOS runner.
+# Builds iOS app using EAS CLI --local on GitHub's macOS runner with Xcode 26.3.
 # Uses npm postinstall + patch-package to patch expo-modules-core and expo-router.
-# Explicitly selects Xcode 26.3 to support iOS 26 APIs.
-# Uploads IPA artifact and optionally submits to TestFlight.
+# Uploads IPA artifact and submits to TestFlight via App Store Connect API key.
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -29,14 +28,10 @@ jobs:
 
       - name: Select Xcode 26.3
         run: |
-          echo "Available Xcode versions:"
-          ls /Applications/ | grep Xcode | sort
-          echo ""
           echo "Selecting Xcode 26.3..."
           sudo xcode-select -s "/Applications/Xcode_26.3.app/Contents/Developer"
           xcodebuild -version
           xcrun --sdk iphoneos --show-sdk-version
-          xcrun --sdk iphoneos --show-sdk-build-version
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -80,15 +75,28 @@ jobs:
           path: build-output/buildtrack.ipa
           retention-days: 7
 
+      - name: Setup App Store Connect API key
+        if: ${{ github.event.inputs.submit_to_testflight == 'true' }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "${{ secrets.APPLE_API_KEY }}" | base64 -d > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8
+          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8
+          ls -la ~/.appstoreconnect/private_keys/
+
       - name: Submit to TestFlight
         if: ${{ github.event.inputs.submit_to_testflight == 'true' }}
         run: |
           xcrun altool --upload-app \
             -f build-output/buildtrack.ipa \
             -t ios \
-            -u "${{ secrets.APPLE_ID }}" \
-            -p "${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" \
+            --apiKey "${{ secrets.APPLE_API_KEY_ID }}" \
+            --apiIssuer "${{ secrets.APPLE_API_ISSUER_ID }}" \
             --verbose
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -rf ~/.appstoreconnect/private_keys || true
 
       - name: Notify
         if: always()
