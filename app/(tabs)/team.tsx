@@ -17,13 +17,14 @@ import { COLORS } from '../../constants/theme';
 
 interface Worker {
   id: string;
-  full_name: string;
+  name: string;
+  full_name?: string;
   role: string;
   status: string;
   email?: string;
   phone?: string;
   hourly_rate?: number;
-  created_at: string;
+  created_at?: string;
 }
 
 export default function TeamScreen() {
@@ -61,7 +62,7 @@ export default function TeamScreen() {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
-      w.full_name.toLowerCase().includes(q) ||
+      (w.name || w.full_name || '').toLowerCase().includes(q) ||
       w.role.toLowerCase().includes(q) ||
       (w.email || '').toLowerCase().includes(q)
     );
@@ -146,13 +147,13 @@ export default function TeamScreen() {
                   marginRight: 12,
                 }}
               >
-                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{initials(w.full_name)}</Text>
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{initials(w.full_name || w.name || '')}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: theme.text }}>{w.full_name}</Text>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: theme.text }}>{w.full_name || w.name}</Text>
                 <Text style={{ fontSize: 13, color: theme.textSecondary }}>{w.role}</Text>
-                {w.email && (
-                  <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>{w.email}</Text>
+                {(w.email || w.phone) && (
+                  <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>{w.email || w.phone}</Text>
                 )}
               </View>
               <View style={{ backgroundColor: w.status === 'active' ? '#22c55e' : '#64748b', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
