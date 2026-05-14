@@ -1,128 +1,196 @@
-import { View, Text, TextInput, FlatList, Pressable, RefreshControl, useColorScheme } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  RefreshControl,
+  TouchableOpacity,
+  TextInput,
+  useColorScheme,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useState, useCallback } from 'react';
-import { useProjectsStore } from '../../stores/projectsStore';
-import { Card } from '../../components/ui/Card';
-import { StatusBadge } from '../../components/ui/StatusBadge';
-import { colors } from '../../constants/colors';
+import { supabase } from '../../lib/supabase';
+import { COLORS } from '../../constants/theme';
 
-export default function ProjectsScreen() {
-  const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const { projects, fetchProjects, loading } = useProjectsStore();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [refreshing, setRefreshing] = useState(false);
-
-  // Filter projects by search
-  const filteredProjects = searchQuery.trim()
-    ? projects.filter((p) =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.status.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : projects;
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchProjects();
-    setRefreshing(false);
-  }, [fetchProjects]);
-
-  return (
-    <View className="flex-1 bg-gray-50 dark:bg-gray-900">
-      <View className="p-4">
-        <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-2xl font-bold text-gray-900 dark:text-white">Projects</Text>
-          <Pressable
-            onPress={() => router.push('/(modals)/project-details')}
-            className="bg-blue-600 px-4 py-2 rounded-lg flex-row items-center"
-          >
-            <Ionicons name="add" size={20} color="white" />
-            <Text className="text-white font-semibold ml-1">New</Text>
-          </Pressable>
-        </View>
-
-        {/* Search Bar */}
-        <View className={`flex-row items-center mb-4 p-3 rounded-xl ${
-          isDark ? 'bg-zinc-900' : 'bg-white'
-        }`}>
-          <Ionicons name="search" size={18} color={colors.gray} />
-          <TextInput
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Search projects..."
-            placeholderTextColor={isDark ? '#52525b' : '#9ca3af'}
-            className={`flex-1 ml-2 text-base ${isDark ? 'text-white' : 'text-gray-900'}`}
-          />
-          {searchQuery.length > 0 && (
-            <Pressable onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color={colors.gray} />
-            </Pressable>
-          )}
-        </View>
-
-        <FlatList
-          data={filteredProjects}
-          keyExtractor={(item) => item.id}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          renderItem={({ item }) => (
-            <Card className="mb-3">
-              <Pressable
-                onPress={() => router.push(`/project/${item.id}`)}
-                className="p-4"
-              >
-                <View className="flex-row justify-between items-start">
-                  <View className="flex-1">
-                    <Text className="text-lg font-semibold text-gray-900 dark:text-white">{item.name}</Text>
-                    <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">{item.location}</Text>
-                  </View>
-                  <StatusBadge status={item.status} />
-                </View>
-
-                <View className="flex-row mt-3 space-x-6">
-                  <InfoRow icon="calendar" text={`Due ${new Date(item.endDate).toLocaleDateString()}`} />
-                  <InfoRow icon="people" text={`${item.teamSize} workers`} />
-                  <InfoRow icon="cash" text={`$${item.budget.toLocaleString()}`} />
-                </View>
-
-                <View className="mt-3">
-                  <View className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <View
-                      className="h-full bg-blue-600 rounded-full"
-                      style={{ width: `${item.progress}%` }}
-                    />
-                  </View>
-                  <View className="flex-row justify-between mt-1">
-                    <Text className="text-xs text-gray-500">Progress</Text>
-                    <Text className="text-xs text-gray-500">{item.progress}%</Text>
-                  </View>
-                </View>
-              </Pressable>
-            </Card>
-          )}
-          ListEmptyComponent={
-            <View className="items-center py-12">
-              <Ionicons name="construct-outline" size={48} color={colors.gray} />
-              <Text className="text-gray-500 mt-4 text-center">
-                {searchQuery ? 'No projects match your search' : 'No projects yet.\nTap "New" to create one.'}
-              </Text>
-            </View>
-          }
-        />
-      </View>
-    </View>
-  );
+interface Project {
+  id: string;
+  name: string;
+  location: string;
+  status: string;
+  progress: number;
+  budget: number;
+  team_size: number;
+  start_date: string;
+  end_date: string;
+  user_id: string;
 }
 
-function InfoRow({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: string }) {
+export default function ProjectsScreen() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [filtered, setFiltered] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const theme = isDark ? COLORS.dark : COLORS.light;
+
+  const fetchProjects = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setProjects(data || []);
+    } catch (err: any) {
+      console.log('[ProjectsScreen] Error:', err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+
+  useEffect(() => {
+    let result = [...projects];
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter((p) =>
+        p.name.toLowerCase().includes(q) ||
+        (p.location && p.location.toLowerCase().includes(q))
+      );
+    }
+    if (statusFilter) {
+      result = result.filter((p) => p.status === statusFilter);
+    }
+    setFiltered(result);
+  }, [projects, search, statusFilter]);
+
+  const statusColors: Record<string, string> = {
+    planning: '#f59e0b',
+    active: '#22c55e',
+    on_hold: '#ef4444',
+    completed: '#3b82f6',
+    cancelled: '#64748b',
+  };
+
+  const statusLabels: Record<string, string> = {
+    planning: 'Planning',
+    active: 'Active',
+    on_hold: 'On Hold',
+    completed: 'Done',
+    cancelled: 'Cancelled',
+  };
+
   return (
-    <View className="flex-row items-center">
-      <Ionicons name={icon} size={14} color={colors.gray} />
-      <Text className="text-xs text-gray-500 ml-1">{text}</Text>
-    </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
+      <View style={{ backgroundColor: theme.bg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 8 }}>
+          <Text style={{ fontSize: 28, fontWeight: 'bold', color: theme.text, flex: 1 }}>Projects</Text>
+          <TouchableOpacity onPress={() => router.push('/project/create')} style={{ padding: 8, backgroundColor: COLORS.primary[600], borderRadius: 12 }}>
+            <Ionicons name="add" size={22} color="white" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#1e293b' : '#f1f5f9', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 }}>
+            <Ionicons name="search" size={18} color={theme.textMuted} />
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Search projects..."
+              placeholderTextColor={theme.textMuted}
+              style={{ flex: 1, marginLeft: 8, color: theme.text, fontSize: 16 }}
+            />
+            {search ? (
+              <TouchableOpacity onPress={() => setSearch('')}>
+                <Ionicons name="close-circle" size={18} color={theme.textMuted} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingLeft: 16, paddingBottom: 8 }}>
+          {['all', 'planning', 'active', 'on_hold', 'completed', 'cancelled'].map((s) => {
+            const active = statusFilter === (s === 'all' ? null : s);
+            return (
+              <TouchableOpacity
+                key={s}
+                onPress={() => setStatusFilter(s === 'all' ? null : s)}
+                style={{
+                  paddingHorizontal: 14,
+                  paddingVertical: 6,
+                  borderRadius: 20,
+                  marginRight: 8,
+                  backgroundColor: active ? COLORS.primary[600] : isDark ? '#1e293b' : '#e2e8f0',
+                }}
+              >
+                <Text style={{ color: active ? '#fff' : theme.textSecondary, fontWeight: active ? '600' : '400', fontSize: 13 }}>
+                  {statusLabels[s] || 'All'}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      <ScrollView
+        style={{ flex: 1 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchProjects().finally(() => setRefreshing(false)); }} />}
+      >
+        {filtered.length === 0 && !loading ? (
+          <View style={{ alignItems: 'center', paddingVertical: 80 }}>
+            <Ionicons name="folder-open" size={56} color={theme.textMuted} />
+            <Text style={{ color: theme.textMuted, marginTop: 16, fontSize: 16 }}>No projects found.</Text>
+            <TouchableOpacity onPress={() => router.push('/project/create')} style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 12, backgroundColor: COLORS.primary[600], borderRadius: 12 }}>
+              <Text style={{ color: '#fff', fontWeight: '600' }}>Create Project</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={{ padding: 16, paddingTop: 8 }}>
+            {filtered.map((p) => (
+              <TouchableOpacity key={p.id} onPress={() => router.push(`/project/${p.id}`)} style={{ backgroundColor: isDark ? '#1e293b' : '#fff', borderRadius: 16, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOpacity: isDark ? 0 : 0.04, shadowRadius: 8 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 17, fontWeight: '700', color: theme.text }}>{p.name}</Text>
+                    <Text style={{ color: theme.textSecondary, marginTop: 2, fontSize: 13 }}>{p.location || 'No location'}</Text>
+                  </View>
+                  <View style={{ backgroundColor: (statusColors[p.status] || '#64748b') + '20', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: statusColors[p.status] || '#64748b' }}>{statusLabels[p.status] || p.status}</Text>
+                  </View>
+                </View>
+
+                <View style={{ marginTop: 12 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <Text style={{ fontSize: 12, color: theme.textMuted }}>Progress</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.primary[600] }}>{p.progress || 0}%</Text>
+                  </View>
+                  <View style={{ height: 6, backgroundColor: isDark ? '#334155' : '#e2e8f0', borderRadius: 3 }}>
+                    <View style={{ height: 6, width: `${Math.min(p.progress || 0, 100)}%`, backgroundColor: COLORS.primary[600], borderRadius: 3 }} />
+                  </View>
+                </View>
+
+                <View style={{ flexDirection: 'row', marginTop: 12, alignItems: 'center' }}>
+                  <Ionicons name="people" size={14} color={theme.textMuted} />
+                  <Text style={{ marginLeft: 4, color: theme.textSecondary, fontSize: 13 }}>{p.team_size || 0} members</Text>
+                  <View style={{ width: 1, height: 12, backgroundColor: theme.border, marginHorizontal: 10 }} />
+                  <Ionicons name="calendar" size={14} color={theme.textMuted} />
+                  <Text style={{ marginLeft: 4, color: theme.textSecondary, fontSize: 13 }}>
+                    {new Date(p.start_date).toLocaleDateString()} – {new Date(p.end_date).toLocaleDateString()}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }

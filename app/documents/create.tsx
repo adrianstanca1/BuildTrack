@@ -1,32 +1,54 @@
-import { View, Text, TextInput, ScrollView, Pressable, Alert, useColorScheme, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  ScrollView,
+  Pressable,
+  Alert,
+  useColorScheme,
+  ActivityIndicator,
+  Image,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
 import { Card } from '../../components/ui/Card';
 import { COLORS } from '../../constants/theme';
 import { supabase } from '../../lib/supabase';
 import { uploadFile } from '../../lib/db';
-
-const DISCIPLINES = [
-  { value: 'Architectural', label: 'Architectural', icon: 'business' },
-  { value: 'Structural', label: 'Structural', icon: 'construct' },
-  { value: 'Mechanical', label: 'Mechanical', icon: 'settings' },
-  { value: 'Electrical', label: 'Electrical', icon: 'flash' },
-  { value: 'Plumbing', label: 'Plumbing', icon: 'water' },
-  { value: 'Civil', label: 'Civil', icon: 'earth' },
-];
-
-const STATUSES = [
-  { value: 'active', label: 'Active' },
-  { value: 'superseded', label: 'Superseded' },
-  { value: 'archived', label: 'Archived' },
-];
+import * as ImagePicker from 'expo-image-picker';
 
 type Project = { id: string; name: string };
 
-export default function CreateDrawingScreen() {
+function detectFileType(uri: string, mimeType?: string | null): string {
+  if (mimeType) {
+    if (mimeType.includes('pdf')) return 'pdf';
+    if (mimeType.includes('msword') || mimeType.includes('wordprocessingml')) return 'docx';
+    if (mimeType.includes('text/plain')) return 'txt';
+    if (mimeType.includes('image/png')) return 'png';
+    if (mimeType.includes('image/jpeg') || mimeType.includes('image/jpg')) return 'jpg';
+    if (mimeType.includes('image/webp')) return 'webp';
+  }
+  const ext = (uri.match(/\\.([a-zA-Z0-9]+)(\\?.*)?$/)?.[1] || '').toLowerCase();
+  if (ext === 'pdf') return 'pdf';
+  if (ext === 'doc') return 'doc';
+  if (ext === 'docx') return 'docx';
+  if (ext === 'txt') return 'txt';
+  if (ext === 'png') return 'png';
+  if (ext === 'jpg' || ext === 'jpeg') return 'jpg';
+  if (ext === 'webp') return 'webp';
+  return 'file';
+}
+
+let DocumentPicker: any;
+try {
+  DocumentPicker = require('expo-document-picker');
+} catch {
+  DocumentPicker = null;
+}
+
+export default function CreateDocumentScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -37,25 +59,21 @@ export default function CreateDrawingScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const [form, setForm] = useState({
-    title: '',
-    project_id: '',
-    discipline: 'Architectural',
-    revision: 'A',
-    status: 'active',
-  });
+  const [title, setTitle] = useState('');
+  const [projectId, setProjectId] = useState('');
   const [fileUri, setFileUri] = useState<string | null>(null);
   const [fileMime, setFileMime] = useState<string | null>(null);
+  const [fileType, setFileType] = useState<string>('');
+  const [fileName, setFileName] = useState<string>('');
 
   useEffect(() => {
     (async () => {
       try {
         const { data, error } = await supabase.from('projects').select('id, name').order('name');
         if (error) throw error;
-        setProjects((data as Project[]) || []);
-        if (data && data.length > 0) {
-          setForm((prev) => ({ ...prev, project_id: data[0].id }));
-        }
+        const list = (data as Project[]) || [];
+        setProjects(list);
+        if (list.length > 0) setProjectId(list[0].id);
       } catch (err) {
         console.error('Failed to load projects', err);
       } finally {
@@ -64,73 +82,94 @@ export default function CreateDrawingScreen() {
     })();
   }, []);
 
-  const updateField = (field: string, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const pickFile = async () => {
+  const pickDocument = async () => {
+    if (DocumentPicker) {
+      try {
+        const result = await DocumentPicker.getDocumentAsync({
+          type: ['application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/png', 'image/jpeg'],
+          copyToCacheDirectory: true,
+        });
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+          const asset = result.assets[0];
+          setFileUri(asset.uri);
+          setFileName(asset.name || '');
+          const mime = asset.mimeType || '';
+          setFileMime(mime);
+          setFileType(detectFileType(asset.uri, mime));
+          if (!title.trim() && asset.name) {
+            const baseName = asset.name.replace(/\\.[^/.]+$/, '');
+            setTitle(baseName);
+          }
+        }
+        return;
+      } catch (e) {
+        console.log('DocumentPicker error', e);
+      }
+    }
+    // fallback to image picker
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,
       quality: 0.9,
     });
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      setFileUri(result.assets[0].uri);
-      setFileMime(result.assets[0].mimeType || 'image/jpeg');
+      const asset = result.assets[0];
+      setFileUri(asset.uri);
+      setFileName(asset.uri.split('/').pop() || '');
+      const mime = asset.mimeType || '';
+      setFileMime(mime);
+      setFileType(detectFileType(asset.uri, mime));
     }
   };
 
   const handleSubmit = async () => {
-    if (!form.title.trim()) {
+    if (!title.trim()) {
       Alert.alert('Error', 'Title is required');
       return;
     }
-    if (!form.project_id) {
+    if (!projectId) {
       Alert.alert('Error', 'Please select a project');
+      return;
+    }
+    if (!fileUri) {
+      Alert.alert('Error', 'Please pick a file');
       return;
     }
 
     setSubmitting(true);
     setUploadProgress(0);
     try {
-      let file_url: string | undefined;
-
-      if (fileUri) {
-        setUploadProgress(30);
-        const { url } = await uploadFile('buildtrack-drawings', fileUri, fileMime || undefined);
-        setUploadProgress(70);
-        file_url = url;
-      }
+      setUploadProgress(20);
+      const { url } = await uploadFile('buildtrack-documents', fileUri, fileMime || undefined);
+      setUploadProgress(70);
 
       const { data: userData } = await supabase.auth.getUser();
       const user = userData.user;
+      const project = projects.find((p) => p.id === projectId);
 
-      const project = projects.find((p) => p.id === form.project_id);
-
-      const { error } = await supabase.from('drawings').insert({
-        title: form.title.trim(),
-        project_id: form.project_id,
+      const { error } = await supabase.from('documents').insert({
+        title: title.trim(),
+        project_id: projectId,
         project_name: project?.name || '',
-        discipline: form.discipline,
-        revision: form.revision.trim(),
-        status: form.status,
-        file_url: file_url || null,
+        file_url: url,
+        file_type: fileType || detectFileType(fileUri, fileMime),
         uploaded_by: user?.email || user?.id || 'Unknown',
       });
 
       if (error) throw error;
 
       setUploadProgress(100);
-      Alert.alert('Success', 'Drawing created');
+      Alert.alert('Success', 'Document uploaded');
       router.back();
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to create drawing');
+      Alert.alert('Error', err.message || 'Failed to upload document');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const selectedProject = projects.find((p) => p.id === form.project_id);
+  const selectedProject = projects.find((p) => p.id === projectId);
+  const isImage = fileType === 'png' || fileType === 'jpg' || fileType === 'jpeg' || fileType === 'webp';
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
@@ -140,7 +179,7 @@ export default function CreateDrawingScreen() {
           <Pressable onPress={() => router.back()} className="mr-3">
             <Ionicons name="arrow-back" size={24} color={isDark ? '#fff' : '#111827'} />
           </Pressable>
-          <Text className="text-xl font-bold" style={{ color: theme.text }}>New Drawing</Text>
+          <Text className="text-xl font-bold" style={{ color: theme.text }}>New Document</Text>
         </View>
 
         <ScrollView className="px-4 pb-8">
@@ -150,9 +189,9 @@ export default function CreateDrawingScreen() {
             <TextInput
               className="border rounded-lg p-3 mb-3 text-base"
               style={{ borderColor: theme.inputBorder, color: theme.text, backgroundColor: theme.inputBg }}
-              value={form.title}
-              onChangeText={(v) => updateField('title', v)}
-              placeholder="Drawing title"
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Document title"
               placeholderTextColor={theme.placeholder}
             />
 
@@ -167,7 +206,7 @@ export default function CreateDrawingScreen() {
                 {projects.map((p) => (
                   <Pressable
                     key={p.id}
-                    onPress={() => updateField('project_id', p.id)}
+                    onPress={() => setProjectId(p.id)}
                     className="mr-2 mb-2 px-3 py-2 rounded-full"
                     style={{
                       backgroundColor: selectedProject?.id === p.id ? COLORS.primary[600] : isDark ? '#334155' : '#e2e8f0',
@@ -184,78 +223,52 @@ export default function CreateDrawingScreen() {
               </View>
             )}
 
-            {/* Revision */}
-            <Text className="text-sm font-medium mb-1" style={{ color: theme.textSecondary }}>Revision</Text>
-            <TextInput
-              className="border rounded-lg p-3 mb-3 text-base"
-              style={{ borderColor: theme.inputBorder, color: theme.text, backgroundColor: theme.inputBg }}
-              value={form.revision}
-              onChangeText={(v) => updateField('revision', v)}
-              placeholder="e.g. A, B, 1, 2"
-              placeholderTextColor={theme.placeholder}
-            />
-
-            {/* Discipline */}
-            <Text className="text-sm font-medium mb-1" style={{ color: theme.textSecondary }}>Discipline</Text>
-            <View className="flex-row flex-wrap mb-3">
-              {DISCIPLINES.map((d) => (
-                <Pressable
-                  key={d.value}
-                  onPress={() => setForm((prev) => ({ ...prev, discipline: d.value }))}
-                  className="mr-2 mb-2 px-3 py-2 rounded-full"
-                  style={{
-                    backgroundColor: form.discipline === d.value ? COLORS.primary[600] : isDark ? '#334155' : '#e2e8f0',
-                  }}
-                >
-                  <Text
-                    className="text-sm"
-                    style={{ color: form.discipline === d.value ? '#fff' : theme.textSecondary }}
-                  >
-                    {d.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            {/* Status */}
-            <Text className="text-sm font-medium mb-1" style={{ color: theme.textSecondary }}>Status</Text>
-            <View className="flex-row flex-wrap mb-3">
-              {STATUSES.map((s) => (
-                <Pressable
-                  key={s.value}
-                  onPress={() => setForm((prev) => ({ ...prev, status: s.value }))}
-                  className="mr-2 mb-2 px-3 py-2 rounded-full"
-                  style={{
-                    backgroundColor: form.status === s.value ? COLORS.primary[600] : isDark ? '#334155' : '#e2e8f0',
-                  }}
-                >
-                  <Text
-                    className="text-sm"
-                    style={{ color: form.status === s.value ? '#fff' : theme.textSecondary }}
-                  >
-                    {s.label}
-                  </Text>
-                </Pressable>
-              ))}
+            {/* File Type (read-only) */}
+            <Text className="text-sm font-medium mb-1" style={{ color: theme.textSecondary }}>Detected Type</Text>
+            <View
+              className="border rounded-lg p-3 mb-3 flex-row items-center"
+              style={{ borderColor: theme.inputBorder, backgroundColor: theme.inputBg }}
+            >
+              <Ionicons
+                name={isImage ? 'image' : 'document'}
+                size={16}
+                color={theme.textMuted}
+                style={{ marginRight: 8 }}
+              />
+              <Text style={{ color: fileType ? theme.text : theme.placeholder }}>
+                {fileType ? fileType.toUpperCase() : 'No file selected'}
+              </Text>
             </View>
 
             {/* File picker */}
-            <Text className="text-sm font-medium mb-1" style={{ color: theme.textSecondary }}>Attachment</Text>
+            <Text className="text-sm font-medium mb-1" style={{ color: theme.textSecondary }}>File *</Text>
             {fileUri ? (
               <View className="mb-3">
-                <Text className="text-sm mb-1" style={{ color: theme.textSecondary }}>Selected: {fileUri.split('/').pop()}</Text>
-                <Pressable onPress={() => { setFileUri(null); setFileMime(null); }}>
+                {isImage && (
+                  <Image
+                    source={{ uri: fileUri }}
+                    className="w-full h-40 rounded-lg mb-2"
+                    resizeMode="cover"
+                  />
+                )}
+                <Text className="text-sm mb-1" style={{ color: theme.textSecondary }}>
+                  Selected: {fileName || fileUri.split('/').pop()}
+                </Text>
+                <Pressable onPress={() => { setFileUri(null); setFileMime(null); setFileType(''); setFileName(''); }}>
                   <Text className="text-sm" style={{ color: COLORS.danger }}>Remove file</Text>
                 </Pressable>
               </View>
             ) : (
               <Pressable
-                onPress={pickFile}
+                onPress={pickDocument}
                 className="border-2 border-dashed rounded-lg p-4 items-center justify-center mb-3"
                 style={{ borderColor: theme.inputBorder, backgroundColor: theme.inputBg }}
               >
                 <Ionicons name="cloud-upload-outline" size={24} color={theme.textMuted} />
-                <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>Pick image / photo</Text>
+                <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
+                  {DocumentPicker ? 'Pick a document or image' : 'Pick an image'}
+                </Text>
+                <Text className="text-xs mt-0.5" style={{ color: theme.textMuted }}>PDF, Word, TXT, PNG, JPG</Text>
               </Pressable>
             )}
 
@@ -283,7 +296,7 @@ export default function CreateDrawingScreen() {
             style={{ backgroundColor: COLORS.primary[600], opacity: submitting ? 0.6 : 1 }}
           >
             <Text className="text-white font-semibold text-base">
-              {submitting ? 'Creating...' : 'Create Drawing'}
+              {submitting ? 'Uploading...' : 'Upload Document'}
             </Text>
           </Pressable>
         </ScrollView>

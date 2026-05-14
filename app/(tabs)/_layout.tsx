@@ -20,6 +20,7 @@ export default function TabLayout() {
             tasks: focused ? 'list' : 'list-outline',
             safety: focused ? 'shield-checkmark' : 'shield-checkmark-outline',
             team: focused ? 'people' : 'people-outline',
+            documents: focused ? 'document-text' : 'document-text-outline',
             profile: focused ? 'person' : 'person-outline',
             more: focused ? 'grid' : 'grid-outline',
           };
@@ -57,6 +58,7 @@ export default function TabLayout() {
       <Tabs.Screen name="tasks" options={{ title: 'Tasks' }} />
       <Tabs.Screen name="safety" options={{ title: 'Safety' }} />
       <Tabs.Screen name="team" options={{ title: 'Team' }} />
+      <Tabs.Screen name="documents" options={{ title: 'Documents' }} />
       <Tabs.Screen name="more" options={{ title: 'More' }} />
     </Tabs>
   );
