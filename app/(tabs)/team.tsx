@@ -1,251 +1,168 @@
-import { View, Text, TextInput, FlatList, Pressable, ScrollView, Alert, useColorScheme } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  useColorScheme,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-import { useTeamStore } from '../../stores/teamStore';
-import { Card } from '../../components/ui/Card';
-import { StatusBadge } from '../../components/ui/StatusBadge';
-import { colors } from '../../constants/colors';
+import { supabase } from '../../lib/supabase';
+import { COLORS } from '../../constants/theme';
+
+interface Worker {
+  id: string;
+  full_name: string;
+  role: string;
+  status: string;
+  email?: string;
+  phone?: string;
+  hourly_rate?: number;
+  created_at: string;
+}
 
 export default function TeamScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { workers, getWorkersByStatus, getWorkersByRole, deleteWorker, toggleActive } = useTeamStore();
+  const theme = isDark ? COLORS.dark : COLORS.light;
+
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const activeWorkers = getWorkersByStatus('active');
-  const totalWorkers = workers.length;
-  const totalHours = workers.reduce((sum, w) => sum + (w.weeklyHours || 0), 0);
+  const loadWorkers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      const uid = u.user?.id;
+      const { data, error } = await supabase
+        .from('workers')
+        .select('*')
+        .eq('user_id', uid)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setWorkers(data || []);
+    } catch (e: any) {
+      console.error('[Team]', e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const roleBreakdown = getWorkersByRole();
+  useEffect(() => { loadWorkers(); }, [loadWorkers]);
 
-  // Filter workers by search
-  const filteredWorkers = searchQuery.trim()
-    ? workers.filter((w) =>
-        w.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        w.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        w.phone.includes(searchQuery)
-      )
-    : workers;
-
-  const handleDeleteWorker = (id: string, name: string) => {
-    Alert.alert(
-      'Delete Worker',
-      `Are you sure you want to remove ${name}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => deleteWorker(id),
-        },
-      ]
+  const filteredWorkers = workers.filter((w) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      w.full_name.toLowerCase().includes(q) ||
+      w.role.toLowerCase().includes(q) ||
+      (w.email || '').toLowerCase().includes(q)
     );
-  };
+  });
 
-  const handleToggleStatus = (id: string) => {
-    toggleActive(id);
-  };
+  const initials = (name: string) =>
+    name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+
+  const bgColors = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-gray-900">
-      <ScrollView className="p-4">
-        <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-2xl font-bold text-gray-900 dark:text-white">
-            Team Management
-          </Text>
-          <Pressable
-            onPress={() => router.push('/(modals)/worker-details' as any)}
-            className="bg-blue-600 px-4 py-2 rounded-lg flex-row items-center"
-          >
-            <Ionicons name="add" size={20} color="white" />
-            <Text className="text-white font-semibold ml-1">Add</Text>
-          </Pressable>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
+      <View style={{ padding: 16 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+          <Text style={{ fontSize: 28, fontWeight: 'bold', color: theme.text, flex: 1 }}>Team</Text>
+          <TouchableOpacity onPress={() => router.push('/team/create')} style={{ padding: 8, backgroundColor: '#3b82f6', borderRadius: 12 }}>
+            <Ionicons name="add" size={22} color="white" />
+          </TouchableOpacity>
         </View>
 
-        {/* Search Bar */}
-        <View className={`flex-row items-center mb-4 p-3 rounded-xl ${
-          isDark ? 'bg-zinc-900' : 'bg-white'
-        }`}>
-          <Ionicons name="search" size={18} color={colors.gray} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#1e293b' : '#f1f5f9', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 }}>
+          <Ionicons name="search" size={18} color={theme.textMuted} />
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search workers..."
-            placeholderTextColor={isDark ? '#52525b' : '#9ca3af'}
-            className={`flex-1 ml-2 text-base ${isDark ? 'text-white' : 'text-gray-900'}`}
+            placeholder="Search team members..."
+            placeholderTextColor={theme.textMuted}
+            style={{ flex: 1, marginLeft: 8, color: theme.text, fontSize: 16 }}
           />
-          {searchQuery.length > 0 && (
-            <Pressable onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color={colors.gray} />
-            </Pressable>
-          )}
+          {searchQuery ? (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
+          ) : null}
         </View>
+      </View>
 
-        {/* Team Stats */}
-        <View className="flex-row -mx-2 mb-6">
-          <TeamStatCard
-            icon="people"
-            label="Total"
-            value={totalWorkers}
-            color={colors.primary}
-          />
-          <TeamStatCard
-            icon="checkmark-circle"
-            label="Active"
-            value={activeWorkers.length}
-            color={colors.success}
-          />
-          <TeamStatCard
-            icon="time"
-            label="Hours/Week"
-            value={totalHours}
-            color={colors.warning}
-          />
-        </View>
-
-        {/* Role Breakdown */}
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-          Role Breakdown
-        </Text>
-
-        <View className="flex-row flex-wrap -mx-2 mb-6">
-          {Object.entries(roleBreakdown).map(([role, workers]) => (
-            <View key={role} className="w-1/2 px-2 mb-3">
-              <View className="bg-white dark:bg-gray-800 p-4 rounded-xl">
-                <View className="flex-row items-center">
-                  <Ionicons name="briefcase" size={16} color={colors.primary} />
-                  <Text className="text-lg font-bold text-gray-900 dark:text-white ml-2">
-                    {workers.length}
-                  </Text>
-                </View>
-                <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1 capitalize">
-                  {role}
-                </Text>
-              </View>
-            </View>
-          ))}
-        </View>
-
-        {/* Workers List */}
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-          Team Members ({filteredWorkers.length})
-        </Text>
-
-        {filteredWorkers.length === 0 ? (
-          <View className="items-center py-12">
-            <Ionicons name="people-outline" size={48} color={colors.gray} />
-            <Text className="text-gray-500 mt-4 text-center">
-              {searchQuery ? 'No workers match your search' : 'No workers yet.\nTap "Add" to create one.'}
-            </Text>
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadWorkers().finally(() => setRefreshing(false)); }} />}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+      >
+        {loading ? (
+          <ActivityIndicator size="large" color="#3b82f6" style={{ marginTop: 40 }} />
+        ) : filteredWorkers.length === 0 ? (
+          <View style={{ alignItems: 'center', paddingVertical: 60 }}>
+            <Ionicons name="people" size={56} color={theme.textMuted} />
+            <Text style={{ color: theme.textMuted, marginTop: 12 }}>No team members found</Text>
+            <TouchableOpacity onPress={() => router.push('/team/create')} style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#3b82f6', borderRadius: 12 }}>
+              <Text style={{ color: '#fff', fontWeight: '600' }}>Add Member</Text>
+            </TouchableOpacity>
           </View>
         ) : (
-          filteredWorkers.map((worker) => (
-            <Card key={worker.id} className="mb-3">
-              <View className="p-4">
-                <View className="flex-row justify-between items-start">
-                  <View className="flex-row items-center">
-                    <View className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full items-center justify-center">
-                      <Text className="text-lg font-bold text-blue-600 dark:text-blue-300">
-                        {worker.name.split(' ').map((n) => n[0]).join('')}
-                      </Text>
-                    </View>
-                    <View className="ml-3">
-                      <Text className="text-base font-semibold text-gray-900 dark:text-white">
-                        {worker.name}
-                      </Text>
-                      <Text className="text-sm text-gray-500 dark:text-gray-400 capitalize">
-                        {worker.role}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View className="flex-row items-center">
-                    <StatusBadge status={worker.status} />
-                  </View>
-                </View>
-
-                <View className="flex-row mt-3 space-x-4">
-                  <View className="flex-row items-center">
-                    <Ionicons name="time" size={14} color={colors.gray} />
-                    <Text className="text-xs text-gray-500 ml-1">{worker.weeklyHours}h/week</Text>
-                  </View>
-                  <View className="flex-row items-center">
-                    <Ionicons name="call" size={14} color={colors.gray} />
-                    <Text className="text-xs text-gray-500 ml-1">{worker.phone}</Text>
-                  </View>
-                  {worker.certifications && worker.certifications.length > 0 && (
-                    <View className="flex-row items-center">
-                      <Ionicons name="ribbon" size={14} color={colors.success} />
-                      <Text className="text-xs text-green-600 ml-1">
-                        {worker.certifications.length} certs
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                {/* Actions */}
-                <View className="flex-row mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                  <Pressable
-                    onPress={() => handleToggleStatus(worker.id)}
-                    className="flex-1 flex-row items-center justify-center py-2"
-                  >
-                    <Ionicons
-                      name={worker.status === 'active' ? 'pause' : 'play'}
-                      size={16}
-                      color={worker.status === 'active' ? colors.warning : colors.success}
-                    />
-                    <Text
-                      className={`text-sm ml-1 ${
-                        worker.status === 'active'
-                          ? 'text-yellow-600'
-                          : 'text-green-600'
-                      }`}
-                    >
-                      {worker.status === 'active' ? 'Set Off-duty' : 'Set Active'}
-                    </Text>
-                  </Pressable>
-
-                  <View className="w-px bg-gray-200 dark:bg-gray-700" />
-
-                  <Pressable
-                    onPress={() => handleDeleteWorker(worker.id, worker.name)}
-                    className="flex-1 flex-row items-center justify-center py-2"
-                  >
-                    <Ionicons name="trash" size={16} color={colors.danger} />
-                    <Text className="text-sm text-red-600 ml-1">Delete</Text>
-                  </Pressable>
-                </View>
+          filteredWorkers.map((w, i) => (
+            <TouchableOpacity
+              key={w.id}
+              onPress={() => router.push(`/team/${w.id}`)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: isDark ? '#1e293b' : '#fff',
+                borderRadius: 16,
+                padding: 14,
+                marginBottom: 10,
+                shadowColor: '#000',
+                shadowOpacity: isDark ? 0 : 0.04,
+                shadowRadius: 6,
+              }}
+            >
+              <View
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 24,
+                  backgroundColor: bgColors[i % bgColors.length],
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: 12,
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{initials(w.full_name)}</Text>
               </View>
-            </Card>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: theme.text }}>{w.full_name}</Text>
+                <Text style={{ fontSize: 13, color: theme.textSecondary }}>{w.role}</Text>
+                {w.email && (
+                  <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>{w.email}</Text>
+                )}
+              </View>
+              <View style={{ backgroundColor: w.status === 'active' ? '#22c55e' : '#64748b', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+                <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600' }}>{w.status}</Text>
+              </View>
+            </TouchableOpacity>
           ))
         )}
       </ScrollView>
-    </View>
-  );
-}
-
-function TeamStatCard({
-  icon,
-  label,
-  value,
-  color,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value: number;
-  color: string;
-}) {
-  return (
-    <View className="w-1/3 px-2">
-      <View className="bg-white dark:bg-gray-800 p-4 rounded-xl items-center">
-        <Ionicons name={icon} size={24} color={color} />
-        <Text className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-          {value}
-        </Text>
-        <Text className="text-xs text-gray-500 mt-1">{label}</Text>
-      </View>
-    </View>
+    </SafeAreaView>
   );
 }

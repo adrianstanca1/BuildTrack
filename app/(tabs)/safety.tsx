@@ -1,172 +1,224 @@
-import { View, Text, FlatList, Pressable, Alert, ScrollView } from 'react-native';
-import { useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  useColorScheme,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafetyStore } from '../../stores/safetyStore';
-import { Card } from '../../components/ui/Card';
-import { colors } from '../../constants/colors';
+import { supabase } from '../../lib/supabase';
+import { COLORS } from '../../constants/theme';
+
+interface Incident {
+  id: string;
+  type: string;
+  severity: string;
+  description?: string;
+  location?: string;
+  date?: string;
+  project_id?: string;
+  project_name: string;
+  reporter: string;
+  status: string;
+  created_at: string;
+}
+
+interface Inspection {
+  id: string;
+  inspection_type: string;
+  status: string;
+  result: string;
+  inspector_name: string;
+  project_id?: string;
+  project_name: string;
+  inspected_at?: string;
+  created_at: string;
+}
 
 export default function SafetyScreen() {
   const router = useRouter();
-  const { incidents, inspections, addIncident, getStats } = useSafetyStore();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const theme = isDark ? COLORS.dark : COLORS.light;
+
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [inspections, setInspections] = useState<Inspection[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'incidents' | 'inspections'>('all');
 
-  const stats = getStats();
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      const uid = u.user?.id;
+      const [{ data: inc }, { data: insp }] = await Promise.all([
+        supabase.from('incidents').select('*').eq('user_id', uid).order('created_at', { ascending: false }),
+        supabase.from('inspections').select('*').eq('user_id', uid).order('created_at', { ascending: false }),
+      ]);
+      setIncidents(inc || []);
+      setInspections(insp || []);
+    } catch (e: any) {
+      console.error('[Safety]', e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const severityColors: Record<string, string> = {
+    low: '#22c55e',
+    minor: '#f59e0b',
+    moderate: '#f97316',
+    high: '#ef4444',
+    critical: '#dc2626',
+  };
+
+  const statusColors: Record<string, string> = {
+    pending: '#f59e0b',
+    resolved: '#22c55e',
+    under_review: '#3b82f6',
+  };
+
+  const stats = {
+    totalIncidents: incidents.length,
+    totalInspections: inspections.length,
+    openIncidents: incidents.filter((i) => i.status !== 'resolved').length,
+    passRate: inspections.length
+      ? Math.round((inspections.filter((i) => i.result === 'pass').length / inspections.length) * 100)
+      : 0,
+  };
 
   const filteredItems = [
-    ...incidents.map(i => ({ ...i, type: 'incident' as const })),
-    ...inspections.map(i => ({ ...i, type: 'inspection' as const })),
-  ].filter(item => filter === 'all' || (filter === 'incidents' ? item.type === 'incident' : item.type === 'inspection'))
-   .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    ...(filter !== 'inspections' ? incidents.map((i) => ({ ...i, _type: 'incident' as const })) : []),
+    ...(filter !== 'incidents' ? inspections.map((i) => ({ ...i, _type: 'inspection' as const })) : []),
+  ].filter((item) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      ((item as any).description || '').toLowerCase().includes(q) ||
+      ((item as any).project_name || '').toLowerCase().includes(q)
+    );
+  }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-gray-900">
-      <View className="p-4">
-        <Text className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-          Safety Management
-        </Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadData().finally(() => setRefreshing(false)); }} />}
+      >
+        <View style={{ padding: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+            <Text style={{ fontSize: 28, fontWeight: 'bold', color: theme.text, flex: 1 }}>Safety</Text>
+            <TouchableOpacity onPress={() => router.push('/safety/create')} style={{ padding: 8, backgroundColor: '#ef4444', borderRadius: 12 }}>
+              <Ionicons name="warning" size={22} color="white" />
+            </TouchableOpacity>
+          </View>
 
-        {/* Safety Stats */}
-        <View className="flex-row -mx-2 mb-4">
-          <SafetyStatCard 
-            icon="shield-checkmark" 
-            label="Days Safe" 
-            value={stats.daysSinceIncident}
-            color={colors.success}
-          />
-          <SafetyStatCard 
-            icon="warning" 
-            label="Incidents" 
-            value={stats.totalIncidents}
-            color={stats.totalIncidents > 0 ? colors.warning : colors.success}
-          />
-          <SafetyStatCard 
-            icon="clipboard" 
-            label="Inspections" 
-            value={stats.totalInspections}
-            color={colors.primary}
-          />
+          {/* Stats */}
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
+            {[
+              { label: 'Incidents', value: stats.totalIncidents, color: '#ef4444' },
+              { label: 'Open', value: stats.openIncidents, color: '#f59e0b' },
+              { label: 'Insp.', value: stats.totalInspections, color: '#3b82f6' },
+              { label: 'Pass Rate', value: `${stats.passRate}%`, color: '#22c55e' },
+            ].map((s) => (
+              <View key={s.label} style={{ flex: 1, backgroundColor: isDark ? '#1e293b' : '#fff', borderRadius: 14, padding: 12, alignItems: 'center' }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: s.color }}>{s.value}</Text>
+                <Text style={{ fontSize: 11, color: theme.textMuted, marginTop: 2 }}>{s.label}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#1e293b' : '#f1f5f9', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 10 }}>
+            <Ionicons name="search" size={18} color={theme.textMuted} />
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search safety records..."
+              placeholderTextColor={theme.textMuted}
+              style={{ flex: 1, marginLeft: 8, color: theme.text, fontSize: 16 }}
+            />
+            {searchQuery ? (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={18} color={theme.textMuted} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+            {(['all', 'incidents', 'inspections'] as const).map((s) => (
+              <TouchableOpacity
+                key={s}
+                onPress={() => setFilter(s)}
+                style={{
+                  paddingHorizontal: 14,
+                  paddingVertical: 6,
+                  borderRadius: 20,
+                  marginRight: 8,
+                  backgroundColor: filter === s ? '#ef4444' : isDark ? '#1e293b' : '#e2e8f0',
+                }}
+              >
+                <Text style={{ color: filter === s ? '#fff' : theme.textSecondary, fontWeight: filter === s ? '600' : '400', fontSize: 13 }}>
+                  {s === 'all' ? 'All' : s === 'incidents' ? 'Incidents' : 'Inspections'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
 
-        {/* Filters */}
-        <View className="flex-row mb-4">
-          <FilterChip label="All" active={filter === 'all'} onPress={() => setFilter('all')} />
-          <FilterChip label="Incidents" active={filter === 'incidents'} onPress={() => setFilter('incidents')} />
-          <FilterChip label="Inspections" active={filter === 'inspections'} onPress={() => setFilter('inspections')} />
-        </View>
-
-        <FlatList
-          data={filteredItems}
-          keyExtractor={(item) => `${item.type}-${item.id}`}
-          renderItem={({ item }) => (
-            <Card className="mb-3">
-              <Pressable className="p-4">
-                <View className="flex-row justify-between items-start">
-                  <View className="flex-row items-center">
-                    <View className={`w-10 h-10 rounded-full items-center justify-center ${
-                      item.type === 'incident' ? 'bg-red-100 dark:bg-red-900' : 'bg-blue-100 dark:bg-blue-900'
-                    }`}>
-                      <Ionicons 
-                        name={item.type === 'incident' ? 'warning' : 'clipboard'} 
-                        size={18} 
-                        color={item.type === 'incident' ? colors.danger : colors.primary}
-                      />
-                    </View>
-                    <View className="ml-3 flex-1">
-                      <Text className="text-base font-semibold text-gray-900 dark:text-white">{item.title}</Text>
-                      <Text className="text-sm text-gray-500 dark:text-gray-400">
-                        {item.projectName} • {new Date(item.date).toLocaleDateString()}
+        {loading ? (
+          <ActivityIndicator size="large" color="#ef4444" style={{ marginTop: 40 }} />
+        ) : (
+          <View style={{ paddingHorizontal: 16, paddingBottom: 24 }}>
+            {filteredItems.length === 0 ? (
+              <View style={{ alignItems: 'center', paddingVertical: 60 }}>
+                <Ionicons name="shield-checkmark" size={56} color={theme.textMuted} />
+                <Text style={{ color: theme.textMuted, marginTop: 12 }}>No records found</Text>
+              </View>
+            ) : (
+              filteredItems.map((item: any) => (
+                <TouchableOpacity
+                  key={item.id}
+                  onPress={() => router.push(`/${item._type}s/${item.id}`)}
+                  style={{ backgroundColor: isDark ? '#1e293b' : '#fff', borderRadius: 16, padding: 14, marginBottom: 10, shadowColor: '#000', shadowOpacity: isDark ? 0 : 0.04, shadowRadius: 6 }}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: theme.text }}>
+                        {(item._type === 'incident' ? item.type : item.inspection_type) || 'Record'}
                       </Text>
+                      <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
+                        {(item.project_name || 'No project')}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      {item._type === 'incident' && item.severity && (
+                        <View style={{ backgroundColor: (severityColors[item.severity] || '#64748b') + '20', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 }}>
+                          <Text style={{ fontSize: 10, fontWeight: '700', color: severityColors[item.severity] || '#64748b' }}>{item.severity}</Text>
+                        </View>
+                      )}
+                      <View style={{ backgroundColor: (statusColors[item.status] || '#64748b') + '20', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 }}>
+                        <Text style={{ fontSize: 10, fontWeight: '700', color: statusColors[item.status] || '#64748b' }}>{item.status}</Text>
+                      </View>
                     </View>
                   </View>
-                  
-                  {'severity' in item && (
-                    <View className={`px-2 py-1 rounded-full ${
-                      item.severity === 'critical' 
-                        ? 'bg-red-100 dark:bg-red-900' 
-                        : item.severity === 'high'
-                        ? 'bg-orange-100 dark:bg-orange-900'
-                        : 'bg-yellow-100 dark:bg-yellow-900'
-                    }`}>
-                      <Text className={`text-xs font-medium ${
-                        item.severity === 'critical' 
-                          ? 'text-red-700 dark:text-red-300' 
-                          : item.severity === 'high'
-                          ? 'text-orange-700 dark:text-orange-300'
-                          : 'text-yellow-700 dark:text-yellow-300'
-                      }`}>
-                        {item.severity}
-                      </Text>
-                    </View>
-                  )}
-                  
-                  {'status' in item && (
-                    <View className={`px-2 py-1 rounded-full ${
-                      item.status === 'passed'
-                        ? 'bg-green-100 dark:bg-green-900'
-                        : item.status === 'failed'
-                        ? 'bg-red-100 dark:bg-red-900'
-                        : 'bg-yellow-100 dark:bg-yellow-900'
-                    }`}>
-                      <Text className={`text-xs font-medium ${
-                        item.status === 'passed'
-                          ? 'text-green-700 dark:text-green-300'
-                          : item.status === 'failed'
-                          ? 'text-red-700 dark:text-red-300'
-                          : 'text-yellow-700 dark:text-yellow-300'
-                      }`}>
-                        {item.status}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </Pressable>
-            </Card>
-          )}
-          ListEmptyComponent={
-            <View className="items-center py-12">
-              <Ionicons name="shield-checkmark-outline" size={48} color={colors.gray} />
-              <Text className="text-gray-500 mt-4 text-center">No safety records yet.</Text>
-            </View>
-          }
-        />
-
-        {/* Report Button */}
-        <Pressable
-          onPress={() => router.push('/(modals)/safety-report')}
-          className="mt-4 bg-red-600 p-4 rounded-xl flex-row items-center justify-center"
-        >
-          <Ionicons name="add-circle" size={20} color="white" />
-          <Text className="text-white font-semibold ml-2">Report Incident / Inspection</Text>
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
-function SafetyStatCard({ icon, label, value, color }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string | number; color: string }) {
-  return (
-    <View className="w-1/3 px-2">
-      <View className="bg-white dark:bg-gray-800 p-4 rounded-xl items-center">
-        <Ionicons name={icon} size={24} color={color} />
-        <Text className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{value}</Text>
-        <Text className="text-xs text-gray-500 mt-1">{label}</Text>
-      </View>
-    </View>
-  );
-}
-
-function FilterChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <Pressable 
-      onPress={onPress}
-      className={`mr-2 px-4 py-2 rounded-full ${
-        active 
-          ? 'bg-blue-600' 
-          : 'bg-gray-200 dark:bg-gray-700'
-      }`}
-    >
-      <Text className={`text-sm ${active ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>{label}</Text>
-    </Pressable>
+                  <Text style={{ marginTop: 6, fontSize: 13, color: theme.textSecondary }}>
+                    {item.description || item.notes || ''}
+                  </Text>
+                </TouchableOpacity>
+              ))
+            )}
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
