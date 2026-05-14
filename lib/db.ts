@@ -87,9 +87,9 @@ export async function getDashboardStats() {
   if (!uid) return { totalProjects: 0, activeProjects: 0, totalTasks: 0, pendingTasks: 0, avgProgress: 0, totalWorkers: 0 };
 
   const [{ data: projects }, { data: tasks }, { data: workers }] = await Promise.all([
-    supabase.from('projects').select('id, status, progress').eq('user_id', uid),
-    supabase.from('tasks').select('status').eq('user_id', uid),
-    supabase.from('workers').select('id').eq('user_id', uid),
+    supabase.from('projects').select('id, status, progress'),
+    supabase.from('tasks').select('status'),
+    supabase.from('workers').select('id'),
   ]);
 
   return {

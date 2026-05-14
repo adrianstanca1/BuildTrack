@@ -52,7 +52,6 @@ export default function NotificationsScreen() {
       const { data, error: dbError } = await supabase
         .from('notifications')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (dbError) throw dbError;
@@ -163,7 +162,7 @@ export default function NotificationsScreen() {
     if (!user || unreadCount === 0) return;
     markAllAsRead();
     try {
-      await supabase.from('notifications').update({ read: true }).eq('user_id', user.id).eq('read', false);
+      await supabase.from('notifications').update({ read: true }).eq('read', false);
     } catch (e) {
       // silent fail — already updated locally
     }
