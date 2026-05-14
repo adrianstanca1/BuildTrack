@@ -60,8 +60,8 @@ export default function SafetyScreen() {
       const { data: u } = await supabase.auth.getUser();
       const uid = u.user?.id;
       const [{ data: inc }, { data: insp }] = await Promise.all([
-        supabase.from('incidents').select('*').eq('user_id', uid).order('created_at', { ascending: false }),
-        supabase.from('inspections').select('*').eq('user_id', uid).order('created_at', { ascending: false }),
+        supabase.from('incidents').select('*').order('created_at', { ascending: false }),
+        supabase.from('inspections').select('*').order('created_at', { ascending: false }),
       ]);
       setIncidents(inc || []);
       setInspections(insp || []);
