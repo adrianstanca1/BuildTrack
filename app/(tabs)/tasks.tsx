@@ -46,7 +46,7 @@ export default function TasksScreen() {
       const { data: u } = await supabase.auth.getUser();
       const uid = u.user?.id;
       if (!uid) { setTasks([]); return; }
-      let q = supabase.from('tasks').select('*').eq('user_id', uid).order('created_at', { ascending: false });
+      let q = supabase.from('tasks').select('*').order('created_at', { ascending: false });
       if (statusFilter && statusFilter !== 'all') q = q.eq('status', statusFilter);
       const { data, error } = await q;
       if (error) throw error;

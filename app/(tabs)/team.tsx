@@ -44,8 +44,7 @@ export default function TeamScreen() {
       const uid = u.user?.id;
       const { data, error } = await supabase
         .from('workers')
-        .select('*')
-        .eq('user_id', uid)
+        .select('id, name, role, status, avatar, phone, email, project_assignments')
         .order('created_at', { ascending: false });
       if (error) throw error;
       setWorkers(data || []);
