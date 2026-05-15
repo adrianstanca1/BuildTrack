@@ -1,396 +1,284 @@
-import { View, Text, TextInput, ScrollView, Pressable, Alert, useColorScheme } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, Pressable, TextInput, Alert, ActivityIndicator, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS } from '@/constants/theme';
 import { useChangeOrdersStore } from '../../stores/changeOrdersStore';
-import { Card } from '../../components/ui/Card';
-import { colors } from '../../constants/colors';
-import type { ChangeOrderType, ChangeOrderStatus } from '../../types/field';
+import { useProjects } from '@/hooks/useProjects';
 
-const CHANGE_ORDER_TYPES: ChangeOrderType[] = ['scope', 'price', 'time', 'design', 'other'];
-const CHANGE_ORDER_STATUSES: ChangeOrderStatus[] = [
-  'draft',
-  'submitted',
-  'under_review',
-  'approved',
-  'rejected',
-  'withdrawn',
-];
-
-function typeLabel(type: ChangeOrderType) {
-  switch (type) {
-    case 'scope': return 'Scope';
-    case 'price': return 'Price';
-    case 'time': return 'Time';
-    case 'design': return 'Design';
-    case 'other': return 'Other';
-  }
-}
-
-function statusLabel(status: ChangeOrderStatus) {
-  return status.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
-}
-
-function statusColor(status: ChangeOrderStatus) {
-  switch (status) {
-    case 'approved': return colors.success;
-    case 'submitted': return colors.primary;
-    case 'under_review': return colors.info;
-    case 'rejected': return colors.danger;
-    case 'withdrawn': return colors.gray;
-    case 'draft': return colors.warning;
-    default: return colors.gray;
-  }
-}
+const TYPES = ['scope', 'price', 'time', 'design', 'other'] as const;
+const STATUSES = ['draft', 'submitted', 'under_review', 'approved', 'rejected', 'withdrawn'] as const;
 
 export default function CreateChangeOrderScreen() {
-  const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { createChangeOrder } = useChangeOrdersStore();
-  const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
-    coNumber: '',
-    title: '',
-    projectId: '',
-    projectName: '',
-    description: '',
-    reason: '',
-    type: 'scope' as ChangeOrderType,
-    status: 'draft' as ChangeOrderStatus,
-    originalCost: 0,
-    proposedCost: 0,
-    originalScheduleDays: 0,
-    proposedScheduleDays: 0,
-    requestedBy: '',
-    requestedById: '',
-    requestedDate: new Date().toISOString().split('T')[0],
-    notes: '',
-  });
+  const theme = isDark ? COLORS.dark : COLORS.light;
 
-  const updateField = (field: string, value: string | number) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
+  const [coNumber, setCoNumber] = useState('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [reason, setReason] = useState('');
+  const [type, setType] = useState<string>('scope');
+  const [status, setStatus] = useState<string>('draft');
+  const [projectId, setProjectId] = useState('');
+  const [originalCost, setOriginalCost] = useState('');
+  const [proposedCost, setProposedCost] = useState('');
+  const [originalDays, setOriginalDays] = useState('');
+  const [proposedDays, setProposedDays] = useState('');
+  const [notes, setNotes] = useState('');
 
-  const impactCost = form.proposedCost - form.originalCost;
-  const impactDays = form.proposedScheduleDays - form.originalScheduleDays;
+  const { createChangeOrder, loading } = useChangeOrdersStore();
+  const { data: projectsData, isLoading: loadingProjects } = useProjects();
+  const projects = projectsData?.data?.data || [];
+
+  useEffect(() => {
+    if (projects.length > 0 && !projectId) {
+      setProjectId(projects[0].id);
+    }
+  }, [projects, projectId]);
 
   const handleSubmit = async () => {
-    if (!form.coNumber || !form.title || !form.projectName || !form.requestedBy || !form.requestedDate) {
-      Alert.alert('Error', 'CO number, title, project name, requested by, and requested date are required');
+    if (!title.trim()) {
+      Alert.alert('Error', 'Title is required');
+      return;
+    }
+    if (!coNumber.trim()) {
+      Alert.alert('Error', 'Change order number is required');
       return;
     }
 
-    if (!/\d{4}-\d{2}-\d{2}/.test(form.requestedDate)) {
-      Alert.alert('Error', 'Requested date should be in format YYYY-MM-DD');
-      return;
-    }
+    const project = projects.find((p: any) => p.id === projectId);
 
-    setLoading(true);
     try {
-      const changeOrder = await createChangeOrder({
-        coNumber: form.coNumber,
-        title: form.title,
-        projectId: form.projectId || undefined,
-        projectName: form.projectName,
-        description: form.description || undefined,
-        reason: form.reason || undefined,
-        type: form.type,
-        status: form.status,
-        originalCost: form.originalCost,
-        proposedCost: form.proposedCost,
-        originalScheduleDays: form.originalScheduleDays,
-        proposedScheduleDays: form.proposedScheduleDays,
-        impactCost,
-        impactDays,
-        requestedBy: form.requestedBy,
-        requestedById: form.requestedById || undefined,
-        requestedDate: form.requestedDate,
-        notes: form.notes || undefined,
+      await createChangeOrder({
+        coNumber: coNumber.trim(),
+        title: title.trim(),
+        description: description.trim() || undefined,
+        reason: reason.trim() || undefined,
+        type: type as any,
+        status: status as any,
+        projectId: projectId || undefined,
+        projectName: project?.name || 'No Project',
+        originalCost: parseFloat(originalCost) || 0,
+        proposedCost: parseFloat(proposedCost) || 0,
+        originalScheduleDays: parseInt(originalDays) || 0,
+        proposedScheduleDays: parseInt(proposedDays) || 0,
+        impactCost: (parseFloat(proposedCost) || 0) - (parseFloat(originalCost) || 0),
+        impactDays: (parseInt(proposedDays) || 0) - (parseInt(originalDays) || 0),
+        notes: notes.trim() || undefined,
       });
-
-      if (changeOrder) {
-        Alert.alert('Success', 'Change order created');
-        router.back();
-      } else {
-        Alert.alert('Error', 'Failed to create change order');
-      }
-    } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to create change order');
-    } finally {
-      setLoading(false);
+      Alert.alert('Success', 'Change order created', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to create change order');
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    try {
-      return new Intl.NumberFormat('en-GB', {
-        style: 'currency',
-        currency: 'GBP',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      }).format(amount);
-    } catch {
-      return `£${amount}`;
-    }
+  const inputStyle = {
+    backgroundColor: theme.inputBg,
+    borderRadius: 12,
+    padding: 14,
+    color: theme.text,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: theme.inputBorder,
   };
+
+  const labelStyle = {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: theme.textMuted,
+    marginBottom: 6,
+    marginTop: 16,
+  };
+
+  const selectedProject = projects.find((p: any) => p.id === projectId);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#111827' : '#f9fafb' }} edges={['top']}>
-      <View className="flex-1 bg-gray-50 dark:bg-gray-900">
-        {/* Header */}
-        <View className="p-4 flex-row items-center">
-          <Pressable onPress={() => router.back()} className="mr-3">
-            <Ionicons name="arrow-back" size={24} color={isDark ? '#fff' : '#111827'} />
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
+      <ScrollView className="px-4 py-4">
+        <View className="flex-row items-center mb-6">
+          <Pressable onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color={theme.text} />
           </Pressable>
-          <Text className="text-xl font-bold text-gray-900 dark:text-white">New Change Order</Text>
+          <Text className="text-xl font-bold ml-4" style={{ color: theme.text }}>New Change Order</Text>
         </View>
 
-        <ScrollView className="p-4">
-          <Card className="p-4">
-            {/* CO Number */}
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">CO Number *</Text>
-            <TextInput
-              className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-3 text-gray-900 dark:text-white bg-white dark:bg-gray-800"
-              value={form.coNumber}
-              onChangeText={(v) => updateField('coNumber', v)}
-              placeholder="e.g., CO-001"
-              placeholderTextColor={isDark ? '#94a3b8' : '#9ca3af'}
-              autoCapitalize="characters"
-            />
-
-            {/* Title */}
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title *</Text>
-            <TextInput
-              className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-3 text-gray-900 dark:text-white bg-white dark:bg-gray-800"
-              value={form.title}
-              onChangeText={(v) => updateField('title', v)}
-              placeholder="Change order title"
-              placeholderTextColor={isDark ? '#94a3b8' : '#9ca3af'}
-            />
-
-            {/* Project Name */}
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Project Name *</Text>
-            <TextInput
-              className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-3 text-gray-900 dark:text-white bg-white dark:bg-gray-800"
-              value={form.projectName}
-              onChangeText={(v) => updateField('projectName', v)}
-              placeholder="Project name"
-              placeholderTextColor={isDark ? '#94a3b8' : '#9ca3af'}
-            />
-
-            {/* Project ID (optional) */}
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Project ID (optional)</Text>
-            <TextInput
-              className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-3 text-gray-900 dark:text-white bg-white dark:bg-gray-800"
-              value={form.projectId}
-              onChangeText={(v) => updateField('projectId', v)}
-              placeholder="Project ID"
-              placeholderTextColor={isDark ? '#94a3b8' : '#9ca3af'}
-            />
-
-            {/* Description */}
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</Text>
-            <TextInput
-              className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-3 text-gray-900 dark:text-white bg-white dark:bg-gray-800"
-              value={form.description}
-              onChangeText={(v) => updateField('description', v)}
-              placeholder="Describe the change..."
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-              style={{ height: 100 }}
-              placeholderTextColor={isDark ? '#94a3b8' : '#9ca3af'}
-            />
-
-            {/* Reason */}
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reason</Text>
-            <TextInput
-              className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-3 text-gray-900 dark:text-white bg-white dark:bg-gray-800"
-              value={form.reason}
-              onChangeText={(v) => updateField('reason', v)}
-              placeholder="Reason for the change..."
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-              style={{ height: 80 }}
-              placeholderTextColor={isDark ? '#94a3b8' : '#9ca3af'}
-            />
-
-            {/* Type */}
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type</Text>
-            <View className="flex-row flex-wrap mb-3">
-              {CHANGE_ORDER_TYPES.map((t) => (
-                <Pressable
-                  key={t}
-                  onPress={() => setForm((prev) => ({ ...prev, type: t }))}
-                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${
-                    form.type === t ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
-                  }`}
+        <Text style={labelStyle}>Project *</Text>
+        {loadingProjects ? (
+          <ActivityIndicator color={COLORS.primary[600]} />
+        ) : projects.length === 0 ? (
+          <Text style={{ color: theme.textMuted }}>No projects available</Text>
+        ) : (
+          <View className="flex-row flex-wrap">
+            {projects.map((p: any) => (
+              <Pressable
+                key={p.id}
+                onPress={() => setProjectId(p.id)}
+                className="mr-2 mb-2 px-3 py-1.5 rounded-full"
+                style={{
+                  backgroundColor: selectedProject?.id === p.id ? COLORS.primary[600] : isDark ? '#334155' : '#e2e8f0',
+                }}
+              >
+                <Text
+                  className="text-sm"
+                  style={{ color: selectedProject?.id === p.id ? '#fff' : theme.textSecondary }}
                 >
-                  <Text className={`text-sm ${form.type === t ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
-                    {typeLabel(t)}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+                  {p.name}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
 
-            {/* Status */}
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</Text>
-            <View className="flex-row flex-wrap mb-3">
-              {CHANGE_ORDER_STATUSES.map((s) => (
-                <Pressable
-                  key={s}
-                  onPress={() => setForm((prev) => ({ ...prev, status: s }))}
-                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${
-                    form.status === s ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
-                  }`}
-                >
-                  <Text className={`text-sm ${form.status === s ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
-                    {statusLabel(s)}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+        <Text style={labelStyle}>CO Number *</Text>
+        <TextInput
+          style={inputStyle}
+          value={coNumber}
+          onChangeText={setCoNumber}
+          placeholder="e.g. CO-001"
+          placeholderTextColor={theme.placeholder}
+        />
 
-            {/* Cost section */}
-            <Text className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 mt-2">Cost</Text>
-            <View className="flex-row mb-3">
-              <View className="flex-1 mr-2">
-                <Text className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Original (£)</Text>
-                <TextInput
-                  className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-gray-900 dark:text-white bg-white dark:bg-gray-800"
-                  value={String(form.originalCost)}
-                  onChangeText={(v) => updateField('originalCost', Number(v) || 0)}
-                  keyboardType="numeric"
-                  placeholder="0"
-                  placeholderTextColor={isDark ? '#94a3b8' : '#9ca3af'}
-                />
-              </View>
-              <View className="flex-1 ml-2">
-                <Text className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Proposed (£)</Text>
-                <TextInput
-                  className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-gray-900 dark:text-white bg-white dark:bg-gray-800"
-                  value={String(form.proposedCost)}
-                  onChangeText={(v) => updateField('proposedCost', Number(v) || 0)}
-                  keyboardType="numeric"
-                  placeholder="0"
-                  placeholderTextColor={isDark ? '#94a3b8' : '#9ca3af'}
-                />
-              </View>
-            </View>
+        <Text style={labelStyle}>Title *</Text>
+        <TextInput
+          style={inputStyle}
+          value={title}
+          onChangeText={setTitle}
+          placeholder="Change order title"
+          placeholderTextColor={theme.placeholder}
+        />
 
-            {/* Schedule section */}
-            <Text className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Schedule</Text>
-            <View className="flex-row mb-3">
-              <View className="flex-1 mr-2">
-                <Text className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Original Days</Text>
-                <TextInput
-                  className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-gray-900 dark:text-white bg-white dark:bg-gray-800"
-                  value={String(form.originalScheduleDays)}
-                  onChangeText={(v) => updateField('originalScheduleDays', Number(v) || 0)}
-                  keyboardType="numeric"
-                  placeholder="0"
-                  placeholderTextColor={isDark ? '#94a3b8' : '#9ca3af'}
-                />
-              </View>
-              <View className="flex-1 ml-2">
-                <Text className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Proposed Days</Text>
-                <TextInput
-                  className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-gray-900 dark:text-white bg-white dark:bg-gray-800"
-                  value={String(form.proposedScheduleDays)}
-                  onChangeText={(v) => updateField('proposedScheduleDays', Number(v) || 0)}
-                  keyboardType="numeric"
-                  placeholder="0"
-                  placeholderTextColor={isDark ? '#94a3b8' : '#9ca3af'}
-                />
-              </View>
-            </View>
+        <Text style={labelStyle}>Description</Text>
+        <TextInput
+          style={[inputStyle, { height: 100, textAlignVertical: 'top' }]}
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Describe the change..."
+          placeholderTextColor={theme.placeholder}
+          multiline
+        />
 
-            {/* Impact summary */}
-            <View className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 mb-3">
-              <Text className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Impact Summary</Text>
-              <View className="flex-row justify-between">
-                <View>
-                  <Text className="text-xs text-gray-500 dark:text-gray-400">Cost Impact</Text>
-                  <Text
-                    className="text-base font-bold"
-                    style={{ color: impactCost > 0 ? colors.danger : impactCost < 0 ? colors.success : colors.gray }}
-                  >
-                    {impactCost > 0 ? '+' : ''}{formatCurrency(impactCost)}
-                  </Text>
-                </View>
-                <View>
-                  <Text className="text-xs text-gray-500 dark:text-gray-400">Schedule Impact</Text>
-                  <Text
-                    className="text-base font-bold"
-                    style={{ color: impactDays > 0 ? colors.warning : impactDays < 0 ? colors.success : colors.gray }}
-                  >
-                    {impactDays > 0 ? '+' : ''}{impactDays} days
-                  </Text>
-                </View>
-              </View>
-            </View>
+        <Text style={labelStyle}>Reason</Text>
+        <TextInput
+          style={inputStyle}
+          value={reason}
+          onChangeText={setReason}
+          placeholder="Why is this change needed?"
+          placeholderTextColor={theme.placeholder}
+        />
 
-            {/* Requested By */}
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Requested By *</Text>
+        <Text style={labelStyle}>Type</Text>
+        <View className="flex-row flex-wrap">
+          {TYPES.map((t) => (
+            <Pressable
+              key={t}
+              onPress={() => setType(t)}
+              className="mr-2 mb-2 px-3 py-1.5 rounded-full"
+              style={{
+                backgroundColor: type === t ? COLORS.primary[600] : isDark ? '#334155' : '#e2e8f0',
+              }}
+            >
+              <Text className="text-sm capitalize" style={{ color: type === t ? '#fff' : theme.textSecondary }}>
+                {t}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <Text style={labelStyle}>Status</Text>
+        <View className="flex-row flex-wrap">
+          {STATUSES.map((s) => (
+            <Pressable
+              key={s}
+              onPress={() => setStatus(s)}
+              className="mr-2 mb-2 px-3 py-1.5 rounded-full"
+              style={{
+                backgroundColor: status === s ? COLORS.primary[600] : isDark ? '#334155' : '#e2e8f0',
+              }}
+            >
+              <Text className="text-sm capitalize" style={{ color: status === s ? '#fff' : theme.textSecondary }}>
+                {s.replace(/_/g, ' ')}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <View className="flex-row gap-3">
+          <View className="flex-1">
+            <Text style={labelStyle}>Original Cost (£)</Text>
             <TextInput
-              className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-3 text-gray-900 dark:text-white bg-white dark:bg-gray-800"
-              value={form.requestedBy}
-              onChangeText={(v) => updateField('requestedBy', v)}
-              placeholder="Name of requester"
-              placeholderTextColor={isDark ? '#94a3b8' : '#9ca3af'}
+              style={inputStyle}
+              value={originalCost}
+              onChangeText={setOriginalCost}
+              keyboardType="numeric"
+              placeholder="0"
+              placeholderTextColor={theme.placeholder}
             />
-
-            {/* Requested By ID */}
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Requester ID (optional)</Text>
+          </View>
+          <View className="flex-1">
+            <Text style={labelStyle}>Proposed Cost (£)</Text>
             <TextInput
-              className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-3 text-gray-900 dark:text-white bg-white dark:bg-gray-800"
-              value={form.requestedById}
-              onChangeText={(v) => updateField('requestedById', v)}
-              placeholder="Worker / user ID"
-              placeholderTextColor={isDark ? '#94a3b8' : '#9ca3af'}
+              style={inputStyle}
+              value={proposedCost}
+              onChangeText={setProposedCost}
+              keyboardType="numeric"
+              placeholder="0"
+              placeholderTextColor={theme.placeholder}
             />
+          </View>
+        </View>
 
-            {/* Requested Date */}
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Requested Date *</Text>
+        <View className="flex-row gap-3">
+          <View className="flex-1">
+            <Text style={labelStyle}>Original Days</Text>
             <TextInput
-              className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-3 text-gray-900 dark:text-white bg-white dark:bg-gray-800"
-              value={form.requestedDate}
-              onChangeText={(v) => updateField('requestedDate', v)}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={isDark ? '#94a3b8' : '#9ca3af'}
+              style={inputStyle}
+              value={originalDays}
+              onChangeText={setOriginalDays}
+              keyboardType="numeric"
+              placeholder="0"
+              placeholderTextColor={theme.placeholder}
             />
-
-            {/* Notes */}
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</Text>
+          </View>
+          <View className="flex-1">
+            <Text style={labelStyle}>Proposed Days</Text>
             <TextInput
-              className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-3 text-gray-900 dark:text-white bg-white dark:bg-gray-800"
-              value={form.notes}
-              onChangeText={(v) => updateField('notes', v)}
-              placeholder="Additional notes..."
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-              style={{ height: 80 }}
-              placeholderTextColor={isDark ? '#94a3b8' : '#9ca3af'}
+              style={inputStyle}
+              value={proposedDays}
+              onChangeText={setProposedDays}
+              keyboardType="numeric"
+              placeholder="0"
+              placeholderTextColor={theme.placeholder}
             />
-          </Card>
+          </View>
+        </View>
 
-          {/* Submit */}
-          <Pressable
-            onPress={handleSubmit}
-            disabled={loading}
-            className="bg-blue-600 p-4 rounded-lg items-center mt-4 mb-8"
-            style={{ opacity: loading ? 0.6 : 1 }}
-          >
-            <Text className="text-white font-semibold text-base">
-              {loading ? 'Creating...' : 'Create Change Order'}
-            </Text>
-          </Pressable>
-        </ScrollView>
-      </View>
+        <Text style={labelStyle}>Notes</Text>
+        <TextInput
+          style={[inputStyle, { height: 80, textAlignVertical: 'top' }]}
+          value={notes}
+          onChangeText={setNotes}
+          placeholder="Additional notes..."
+          placeholderTextColor={theme.placeholder}
+          multiline
+        />
+
+        <Pressable
+          className="p-4 rounded-xl items-center mb-8 mt-4"
+          style={{
+            backgroundColor: loading || !title.trim() || !coNumber.trim() ? '#9ca3af' : COLORS.primary[600],
+          }}
+          onPress={handleSubmit}
+          disabled={loading || !title.trim() || !coNumber.trim()}
+        >
+          <Text className="text-white font-semibold">
+            {loading ? 'Creating...' : 'Create Change Order'}
+          </Text>
+        </Pressable>
+      </ScrollView>
     </SafeAreaView>
   );
 }
