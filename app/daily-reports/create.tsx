@@ -59,7 +59,7 @@ export default function CreateDailyReportScreen() {
         safetyObservations: safetyObservations.trim() || undefined,
         nextDayPlan: nextDayPlan.trim() || undefined,
         status: status as any,
-        projectId: projectId || undefined,
+        projectId: projectId || '',
         projectName: project?.name || 'No Project',
         submittedBy: '',
       });
