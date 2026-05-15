@@ -1,189 +1,276 @@
-import { View, Text, TextInput, ScrollView, Pressable, Alert, useColorScheme } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, Pressable, TextInput, Alert, ActivityIndicator, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS } from '@/constants/theme';
 import { useDailyReportsStore } from '../../stores/dailyReportsStore';
-import { Card } from '../../components/ui/Card';
-import { COLORS, SPACING, RADIUS } from '../../constants/theme';
+import { useProjects } from '@/hooks/useProjects';
+
+const STATUSES = ['draft', 'submitted', 'approved'] as const;
+const WEATHER_OPTIONS = ['Sunny', 'Cloudy', 'Rainy', 'Windy', 'Foggy', 'Snow'];
 
 export default function CreateDailyReportScreen() {
-  const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { createReport } = useDailyReportsStore();
-  const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
-    projectId: '',
-    reportDate: new Date().toISOString().split('T')[0],
-    weather: '',
-    temperature: '',
-    workersOnSite: '',
-    workCompleted: '',
-    materialsUsed: '',
-    equipmentUsed: '',
-    issuesDelays: '',
-    safetyObservations: '',
-    nextDayPlan: '',
-    submittedBy: '',
-    status: 'draft' as 'draft' | 'submitted' | 'approved',
-  });
+  const theme = isDark ? COLORS.dark : COLORS.light;
 
-  const updateField = (field: string, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
+  const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0]);
+  const [weather, setWeather] = useState('');
+  const [temperature, setTemperature] = useState('');
+  const [workersOnSite, setWorkersOnSite] = useState('');
+  const [workCompleted, setWorkCompleted] = useState('');
+  const [materialsUsed, setMaterialsUsed] = useState('');
+  const [equipmentUsed, setEquipmentUsed] = useState('');
+  const [issuesDelays, setIssuesDelays] = useState('');
+  const [safetyObservations, setSafetyObservations] = useState('');
+  const [nextDayPlan, setNextDayPlan] = useState('');
+  const [status, setStatus] = useState<string>('draft');
+  const [projectId, setProjectId] = useState('');
+
+  const { createReport, loading } = useDailyReportsStore();
+  const { data: projectsData, isLoading: loadingProjects } = useProjects();
+  const projects = projectsData?.data?.data || [];
+
+  useEffect(() => {
+    if (projects.length > 0 && !projectId) {
+      setProjectId(projects[0].id);
+    }
+  }, [projects, projectId]);
 
   const handleSubmit = async () => {
-    if (!form.projectId || !form.reportDate || !form.submittedBy) {
-      Alert.alert('Error', 'Project, report date, and submitted by are required');
+    if (!reportDate.trim()) {
+      Alert.alert('Error', 'Report date is required');
       return;
     }
 
-    setLoading(true);
-    try {
-      const report = await createReport({
-        projectId: form.projectId,
-        projectName: 'Unknown',
-        reportDate: form.reportDate,
-        weather: form.weather || undefined,
-        temperature: form.temperature ? Number(form.temperature) : undefined,
-        workersOnSite: form.workersOnSite ? Number(form.workersOnSite) : 0,
-        workCompleted: form.workCompleted || undefined,
-        materialsUsed: form.materialsUsed || undefined,
-        equipmentUsed: form.equipmentUsed || undefined,
-        issuesDelays: form.issuesDelays || undefined,
-        safetyObservations: form.safetyObservations || undefined,
-        nextDayPlan: form.nextDayPlan || undefined,
-        submittedBy: form.submittedBy,
-        status: form.status,
-      });
+    const project = projects.find((p: any) => p.id === projectId);
 
-      if (report) {
-        Alert.alert('Success', 'Daily report created');
-        router.back();
-      } else {
-        Alert.alert('Error', 'Failed to create daily report');
-      }
-    } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to create report');
-    } finally {
-      setLoading(false);
+    try {
+      await createReport({
+        reportDate: reportDate.trim(),
+        weather: weather.trim() || undefined,
+        temperature: temperature ? parseFloat(temperature) : undefined,
+        workersOnSite: parseInt(workersOnSite) || 0,
+        workCompleted: workCompleted.trim() || undefined,
+        materialsUsed: materialsUsed.trim() || undefined,
+        equipmentUsed: equipmentUsed.trim() || undefined,
+        issuesDelays: issuesDelays.trim() || undefined,
+        safetyObservations: safetyObservations.trim() || undefined,
+        nextDayPlan: nextDayPlan.trim() || undefined,
+        status: status as any,
+        projectId: projectId || undefined,
+        projectName: project?.name || 'No Project',
+        submittedBy: '',
+      });
+      Alert.alert('Success', 'Daily report created', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to create daily report');
     }
   };
 
   const inputStyle = {
+    backgroundColor: theme.inputBg,
+    borderRadius: 12,
+    padding: 14,
+    color: theme.text,
+    fontSize: 16,
     borderWidth: 1,
-    borderColor: isDark ? COLORS.dark.border : COLORS.light.border,
-    borderRadius: RADIUS.md,
-    padding: SPACING.sm,
-    color: isDark ? COLORS.dark.text : COLORS.light.text,
-    backgroundColor: isDark ? COLORS.dark.surface : COLORS.light.surface,
-    marginBottom: SPACING.sm,
+    borderColor: theme.inputBorder,
   };
 
   const labelStyle = {
     fontSize: 14,
-    fontWeight: '500' as const,
-    color: isDark ? COLORS.dark.text : COLORS.light.text,
-    marginBottom: 4,
+    fontWeight: '600' as const,
+    color: theme.textMuted,
+    marginBottom: 6,
+    marginTop: 16,
   };
 
+  const selectedProject = projects.find((p: any) => p.id === projectId);
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? COLORS.dark.background : COLORS.light.background }} edges={['top']}>
-      <View style={{ flex: 1, backgroundColor: isDark ? COLORS.dark.background : COLORS.light.background }}>
-        {/* Header */}
-        <View style={{ padding: SPACING.md, flexDirection: 'row', alignItems: 'center' }}>
-          <Pressable onPress={() => router.back()} style={{ marginRight: SPACING.sm }}>
-            <Ionicons name="arrow-back" size={24} color={isDark ? COLORS.dark.text : COLORS.light.text} />
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
+      <ScrollView className="px-4 py-4">
+        <View className="flex-row items-center mb-6">
+          <Pressable onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color={theme.text} />
           </Pressable>
-          <Text style={{ fontSize: 20, fontWeight: '700', color: isDark ? COLORS.dark.text : COLORS.light.text }}>
-            New Daily Report
-          </Text>
+          <Text className="text-xl font-bold ml-4" style={{ color: theme.text }}>New Daily Report</Text>
         </View>
 
-        <ScrollView style={{ padding: SPACING.md }}>
-          <Card style={{ backgroundColor: isDark ? COLORS.dark.surface : COLORS.light.surface }}>
-            {/* Project ID */}
-            <Text style={labelStyle}>Project ID *</Text>
-            <TextInput style={inputStyle} value={form.projectId} onChangeText={(v) => updateField('projectId', v)} placeholder="Enter project ID" placeholderTextColor={isDark ? COLORS.dark.textMuted : COLORS.light.textMuted} />
+        <Text style={labelStyle}>Project *</Text>
+        {loadingProjects ? (
+          <ActivityIndicator color={COLORS.primary[600]} />
+        ) : projects.length === 0 ? (
+          <Text style={{ color: theme.textMuted }}>No projects available</Text>
+        ) : (
+          <View className="flex-row flex-wrap">
+            {projects.map((p: any) => (
+              <Pressable
+                key={p.id}
+                onPress={() => setProjectId(p.id)}
+                className="mr-2 mb-2 px-3 py-1.5 rounded-full"
+                style={{
+                  backgroundColor: selectedProject?.id === p.id ? COLORS.primary[600] : isDark ? '#334155' : '#e2e8f0',
+                }}
+              >
+                <Text
+                  className="text-sm"
+                  style={{ color: selectedProject?.id === p.id ? '#fff' : theme.textSecondary }}
+                >
+                  {p.name}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
 
-            {/* Report Date */}
-            <Text style={labelStyle}>Report Date *</Text>
-            <TextInput style={inputStyle} value={form.reportDate} onChangeText={(v) => updateField('reportDate', v)} placeholder="YYYY-MM-DD" placeholderTextColor={isDark ? COLORS.dark.textMuted : COLORS.light.textMuted} />
+        <Text style={labelStyle}>Report Date *</Text>
+        <TextInput
+          style={inputStyle}
+          value={reportDate}
+          onChangeText={setReportDate}
+          placeholder="YYYY-MM-DD"
+          placeholderTextColor={theme.placeholder}
+        />
 
-            {/* Weather & Temp */}
-            <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
-              <View style={{ flex: 1 }}>
-                <Text style={labelStyle}>Weather</Text>
-                <TextInput style={inputStyle} value={form.weather} onChangeText={(v) => updateField('weather', v)} placeholder="e.g. Sunny" placeholderTextColor={isDark ? COLORS.dark.textMuted : COLORS.light.textMuted} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={labelStyle}>Temp (°C)</Text>
-                <TextInput style={inputStyle} value={form.temperature} onChangeText={(v) => updateField('temperature', v)} placeholder="22" keyboardType="numeric" placeholderTextColor={isDark ? COLORS.dark.textMuted : COLORS.light.textMuted} />
-              </View>
-            </View>
+        <Text style={labelStyle}>Weather</Text>
+        <View className="flex-row flex-wrap">
+          {WEATHER_OPTIONS.map((w) => (
+            <Pressable
+              key={w}
+              onPress={() => setWeather(w)}
+              className="mr-2 mb-2 px-3 py-1.5 rounded-full"
+              style={{
+                backgroundColor: weather === w ? COLORS.primary[600] : isDark ? '#334155' : '#e2e8f0',
+              }}
+            >
+              <Text className="text-sm" style={{ color: weather === w ? '#fff' : theme.textSecondary }}>
+                {w}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
 
-            {/* Workers */}
+        <View className="flex-row gap-3">
+          <View className="flex-1">
+            <Text style={labelStyle}>Temperature (°C)</Text>
+            <TextInput
+              style={inputStyle}
+              value={temperature}
+              onChangeText={setTemperature}
+              keyboardType="numeric"
+              placeholder="0"
+              placeholderTextColor={theme.placeholder}
+            />
+          </View>
+          <View className="flex-1">
             <Text style={labelStyle}>Workers on Site</Text>
-            <TextInput style={inputStyle} value={form.workersOnSite} onChangeText={(v) => updateField('workersOnSite', v)} placeholder="0" keyboardType="numeric" placeholderTextColor={isDark ? COLORS.dark.textMuted : COLORS.light.textMuted} />
+            <TextInput
+              style={inputStyle}
+              value={workersOnSite}
+              onChangeText={setWorkersOnSite}
+              keyboardType="numeric"
+              placeholder="0"
+              placeholderTextColor={theme.placeholder}
+            />
+          </View>
+        </View>
 
-            {/* Work Completed */}
-            <Text style={labelStyle}>Work Completed</Text>
-            <TextInput style={[inputStyle, { height: 80, textAlignVertical: 'top' }]} value={form.workCompleted} onChangeText={(v) => updateField('workCompleted', v)} placeholder="Describe work completed..." multiline placeholderTextColor={isDark ? COLORS.dark.textMuted : COLORS.light.textMuted} />
+        <Text style={labelStyle}>Status</Text>
+        <View className="flex-row flex-wrap">
+          {STATUSES.map((s) => (
+            <Pressable
+              key={s}
+              onPress={() => setStatus(s)}
+              className="mr-2 mb-2 px-3 py-1.5 rounded-full"
+              style={{
+                backgroundColor: status === s ? COLORS.primary[600] : isDark ? '#334155' : '#e2e8f0',
+              }}
+            >
+              <Text className="text-sm capitalize" style={{ color: status === s ? '#fff' : theme.textSecondary }}>
+                {s}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
 
-            {/* Materials */}
-            <Text style={labelStyle}>Materials Used</Text>
-            <TextInput style={[inputStyle, { height: 60, textAlignVertical: 'top' }]} value={form.materialsUsed} onChangeText={(v) => updateField('materialsUsed', v)} placeholder="List materials used..." multiline placeholderTextColor={isDark ? COLORS.dark.textMuted : COLORS.light.textMuted} />
+        <Text style={labelStyle}>Work Completed</Text>
+        <TextInput
+          style={[inputStyle, { height: 100, textAlignVertical: 'top' }]}
+          value={workCompleted}
+          onChangeText={setWorkCompleted}
+          placeholder="Describe work completed today..."
+          placeholderTextColor={theme.placeholder}
+          multiline
+        />
 
-            {/* Equipment */}
-            <Text style={labelStyle}>Equipment Used</Text>
-            <TextInput style={[inputStyle, { height: 60, textAlignVertical: 'top' }]} value={form.equipmentUsed} onChangeText={(v) => updateField('equipmentUsed', v)} placeholder="List equipment used..." multiline placeholderTextColor={isDark ? COLORS.dark.textMuted : COLORS.light.textMuted} />
+        <Text style={labelStyle}>Materials Used</Text>
+        <TextInput
+          style={[inputStyle, { height: 80, textAlignVertical: 'top' }]}
+          value={materialsUsed}
+          onChangeText={setMaterialsUsed}
+          placeholder="List materials used..."
+          placeholderTextColor={theme.placeholder}
+          multiline
+        />
 
-            {/* Issues */}
-            <Text style={labelStyle}>Issues / Delays</Text>
-            <TextInput style={[inputStyle, { height: 60, textAlignVertical: 'top' }]} value={form.issuesDelays} onChangeText={(v) => updateField('issuesDelays', v)} placeholder="Any issues or delays..." multiline placeholderTextColor={isDark ? COLORS.dark.textMuted : COLORS.light.textMuted} />
+        <Text style={labelStyle}>Equipment Used</Text>
+        <TextInput
+          style={[inputStyle, { height: 80, textAlignVertical: 'top' }]}
+          value={equipmentUsed}
+          onChangeText={setEquipmentUsed}
+          placeholder="List equipment used..."
+          placeholderTextColor={theme.placeholder}
+          multiline
+        />
 
-            {/* Safety */}
-            <Text style={labelStyle}>Safety Observations</Text>
-            <TextInput style={[inputStyle, { height: 60, textAlignVertical: 'top' }]} value={form.safetyObservations} onChangeText={(v) => updateField('safetyObservations', v)} placeholder="Safety observations..." multiline placeholderTextColor={isDark ? COLORS.dark.textMuted : COLORS.light.textMuted} />
+        <Text style={labelStyle}>Issues / Delays</Text>
+        <TextInput
+          style={[inputStyle, { height: 80, textAlignVertical: 'top' }]}
+          value={issuesDelays}
+          onChangeText={setIssuesDelays}
+          placeholder="Any issues or delays?"
+          placeholderTextColor={theme.placeholder}
+          multiline
+        />
 
-            {/* Next Day Plan */}
-            <Text style={labelStyle}>Next Day Plan</Text>
-            <TextInput style={[inputStyle, { height: 60, textAlignVertical: 'top' }]} value={form.nextDayPlan} onChangeText={(v) => updateField('nextDayPlan', v)} placeholder="Plan for next day..." multiline placeholderTextColor={isDark ? COLORS.dark.textMuted : COLORS.light.textMuted} />
+        <Text style={labelStyle}>Safety Observations</Text>
+        <TextInput
+          style={[inputStyle, { height: 80, textAlignVertical: 'top' }]}
+          value={safetyObservations}
+          onChangeText={setSafetyObservations}
+          placeholder="Safety notes..."
+          placeholderTextColor={theme.placeholder}
+          multiline
+        />
 
-            {/* Submitted By & Status */}
-            <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
-              <View style={{ flex: 1 }}>
-                <Text style={labelStyle}>Submitted By *</Text>
-                <TextInput style={inputStyle} value={form.submittedBy} onChangeText={(v) => updateField('submittedBy', v)} placeholder="Your name" placeholderTextColor={isDark ? COLORS.dark.textMuted : COLORS.light.textMuted} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={labelStyle}>Status</Text>
-                <TextInput style={inputStyle} value={form.status} editable={false} />
-              </View>
-            </View>
-          </Card>
+        <Text style={labelStyle}>Next Day Plan</Text>
+        <TextInput
+          style={[inputStyle, { height: 80, textAlignVertical: 'top' }]}
+          value={nextDayPlan}
+          onChangeText={setNextDayPlan}
+          placeholder="Plan for tomorrow..."
+          placeholderTextColor={theme.placeholder}
+          multiline
+        />
 
-          {/* Submit */}
-          <Pressable
-            onPress={handleSubmit}
-            disabled={loading}
-            style={{
-              backgroundColor: COLORS.primary[500],
-              padding: SPACING.md,
-              borderRadius: RADIUS.md,
-              alignItems: 'center',
-              marginTop: SPACING.md,
-              marginBottom: SPACING.xl,
-              opacity: loading ? 0.6 : 1,
-            }}
-          >
-            <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>
-              {loading ? 'Creating...' : 'Create Report'}
-            </Text>
-          </Pressable>
-        </ScrollView>
-      </View>
+        <Pressable
+          className="p-4 rounded-xl items-center mb-8 mt-4"
+          style={{
+            backgroundColor: loading || !reportDate.trim() ? '#9ca3af' : COLORS.primary[600],
+          }}
+          onPress={handleSubmit}
+          disabled={loading || !reportDate.trim()}
+        >
+          <Text className="text-white font-semibold">
+            {loading ? 'Creating...' : 'Create Daily Report'}
+          </Text>
+        </Pressable>
+      </ScrollView>
     </SafeAreaView>
   );
 }
