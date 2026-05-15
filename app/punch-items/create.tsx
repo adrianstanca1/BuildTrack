@@ -1,187 +1,207 @@
-import React, { useState } from "react";
-import {
-  View,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  useColorScheme,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "@/constants/theme";
-import { usePunchItemsStore } from "@/stores/punchItemsStore";
-import { useProjectsStore } from "@/stores/projectsStore";
-import type { PunchItemStatus, PunchItemSeverity } from "@/types/field";
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, Pressable, TextInput, Alert, ActivityIndicator, useColorScheme } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS } from '@/constants/theme';
+import { usePunchItemsStore } from '../../stores/punchItemsStore';
+import { useProjects } from '@/hooks/useProjects';
 
-const STATUSES: PunchItemStatus[] = ["open", "in-progress", "resolved", "closed"];
-const SEVERITIES: PunchItemSeverity[] = ["cosmetic", "minor", "major", "critical"];
+const STATUSES = ['open', 'in-progress', 'resolved', 'closed'] as const;
+const SEVERITIES = ['cosmetic', 'minor', 'major', 'critical'] as const;
 
 export default function CreatePunchItemScreen() {
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const textColor = isDark ? COLORS.dark.text : COLORS.light.text;
-  const mutedColor = isDark ? COLORS.dark.textMuted : COLORS.light.textMuted;
-  const bg = isDark ? COLORS.dark.surface : COLORS.light.surface;
+  const isDark = colorScheme === 'dark';
+  const theme = isDark ? COLORS.dark : COLORS.light;
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [status, setStatus] = useState<PunchItemStatus>("open");
-  const [severity, setSeverity] = useState<PunchItemSeverity>("minor");
-  const [location, setLocation] = useState("");
-  const [assignee, setAssignee] = useState("");
-  const [projectId, setProjectId] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [title, setTitle] = useState('');
+  const [location, setLocation] = useState('');
+  const [assignee, setAssignee] = useState('');
+  const [status, setStatus] = useState<string>('open');
+  const [severity, setSeverity] = useState<string>('minor');
+  const [projectId, setProjectId] = useState('');
 
-  const { createPunchItem } = usePunchItemsStore();
-  const { projects } = useProjectsStore();
+  const { createPunchItem, loading } = usePunchItemsStore();
+  const { data: projectsData, isLoading: loadingProjects } = useProjects();
+  const projects = projectsData?.data?.data || [];
 
-  const handleCreate = async () => {
+  useEffect(() => {
+    if (projects.length > 0 && !projectId) {
+      setProjectId(projects[0].id);
+    }
+  }, [projects, projectId]);
+
+  const handleSubmit = async () => {
     if (!title.trim()) {
-      Alert.alert("Required", "Please enter a title.");
+      Alert.alert('Error', 'Title is required');
       return;
     }
-    setLoading(true);
+
+    const project = projects.find((p: any) => p.id === projectId);
+
     try {
       await createPunchItem({
         title: title.trim(),
-        projectId: projectId || undefined,
-        projectName: projects.find((p) => p.id === projectId)?.name || "",
-        status,
-        severity,
         location: location.trim() || undefined,
         assignee: assignee.trim() || undefined,
+        status: status as any,
+        severity: severity as any,
+        projectId: projectId || undefined,
+        projectName: project?.name || 'No Project',
       });
-      router.back();
-    } catch (err: any) {
-      Alert.alert("Error", err.message || "Failed to create punch item.");
-    } finally {
-      setLoading(false);
+      Alert.alert('Success', 'Punch item created', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to create punch item');
     }
   };
 
+  const inputStyle = {
+    backgroundColor: theme.inputBg,
+    borderRadius: 12,
+    padding: 14,
+    color: theme.text,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: theme.inputBorder,
+  };
+
+  const labelStyle = {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: theme.textMuted,
+    marginBottom: 6,
+    marginTop: 16,
+  };
+
+  const severityColor = (s: string) => {
+    switch (s) {
+      case 'critical': return COLORS.danger;
+      case 'major': return '#f97316';
+      case 'minor': return COLORS.warning;
+      case 'cosmetic': return COLORS.success;
+      default: return theme.textMuted;
+    }
+  };
+
+  const selectedProject = projects.find((p: any) => p.id === projectId);
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? "#111827" : "#f3f4f6" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
       <ScrollView className="px-4 py-4">
         <View className="flex-row items-center mb-6">
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color={textColor} />
-          </TouchableOpacity>
-          <Text className="text-xl font-bold ml-4" style={{ color: textColor }}>New Punch Item</Text>
+          <Pressable onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color={theme.text} />
+          </Pressable>
+          <Text className="text-xl font-bold ml-4" style={{ color: theme.text }}>New Punch Item</Text>
         </View>
 
-        <View className="p-4 rounded-xl mb-4" style={{ backgroundColor: bg }}>
-          <Text className="text-sm font-medium mb-2" style={{ color: textColor }}>Project</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View className="flex-row gap-2">
-              <TouchableOpacity
-                onPress={() => setProjectId("")}
-                className={`px-3 py-1.5 rounded-lg ${projectId === "" ? "bg-blue-600" : "bg-gray-700"}`}
+        <Text style={labelStyle}>Project *</Text>
+        {loadingProjects ? (
+          <ActivityIndicator color={COLORS.primary[600]} />
+        ) : projects.length === 0 ? (
+          <Text style={{ color: theme.textMuted }}>No projects available</Text>
+        ) : (
+          <View className="flex-row flex-wrap">
+            {projects.map((p: any) => (
+              <Pressable
+                key={p.id}
+                onPress={() => setProjectId(p.id)}
+                className="mr-2 mb-2 px-3 py-1.5 rounded-full"
+                style={{
+                  backgroundColor: selectedProject?.id === p.id ? COLORS.primary[600] : isDark ? '#334155' : '#e2e8f0',
+                }}
               >
-                <Text className="text-white text-sm">None</Text>
-              </TouchableOpacity>
-              {projects.map((p) => (
-                <TouchableOpacity
-                  key={p.id}
-                  onPress={() => setProjectId(p.id)}
-                  className={`px-3 py-1.5 rounded-lg ${projectId === p.id ? "bg-blue-600" : "bg-gray-700"}`}
+                <Text
+                  className="text-sm"
+                  style={{ color: selectedProject?.id === p.id ? '#fff' : theme.textSecondary }}
                 >
-                  <Text className="text-white text-sm">{p.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-        </View>
+                  {p.name}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
 
-        <View className="p-4 rounded-xl mb-4" style={{ backgroundColor: bg }}>
-          <Text className="text-sm font-medium mb-2" style={{ color: textColor }}>Title *</Text>
-          <TextInput
-            className="p-3 rounded-lg border"
-            style={{ borderColor: isDark ? "#374151" : "#e5e7eb", color: textColor }}
-            placeholder="Punch item title"
-            placeholderTextColor={mutedColor}
-            value={title}
-            onChangeText={setTitle}
-          />
-        </View>
+        <Text style={labelStyle}>Title *</Text>
+        <TextInput
+          style={inputStyle}
+          value={title}
+          onChangeText={setTitle}
+          placeholder="Punch item title"
+          placeholderTextColor={theme.placeholder}
+        />
 
-        <View className="p-4 rounded-xl mb-4" style={{ backgroundColor: bg }}>
-          <Text className="text-sm font-medium mb-2" style={{ color: textColor }}>Severity</Text>
+        <Text style={labelStyle}>Location</Text>
+        <TextInput
+          style={inputStyle}
+          value={location}
+          onChangeText={setLocation}
+          placeholder="Where is the issue located?"
+          placeholderTextColor={theme.placeholder}
+        />
+
+        <Text style={labelStyle}>Assignee</Text>
+        <TextInput
+          style={inputStyle}
+          value={assignee}
+          onChangeText={setAssignee}
+          placeholder="Who is responsible?"
+          placeholderTextColor={theme.placeholder}
+        />
+
+        <Text style={labelStyle}>Severity</Text>
+        <View className="flex-row flex-wrap">
           {SEVERITIES.map((s) => (
-            <TouchableOpacity
+            <Pressable
               key={s}
-              className="flex-row items-center p-3 rounded-lg mb-2 border"
-              style={{ borderColor: severity === s ? "#2563eb" : isDark ? "#374151" : "#e5e7eb", backgroundColor: severity === s ? "#eff6ff" : bg }}
               onPress={() => setSeverity(s)}
+              className="mr-2 mb-2 px-3 py-1.5 rounded-full"
+              style={{
+                backgroundColor: severity === s ? severityColor(s) + '30' : isDark ? '#334155' : '#e2e8f0',
+                borderWidth: 1,
+                borderColor: severity === s ? severityColor(s) : isDark ? '#334155' : '#e2e8f0',
+              }}
             >
-              <Ionicons name={severity === s ? "radio-button-on" : "radio-button-off"} size={20} color="#2563eb" />
-              <Text className="ml-2 capitalize" style={{ color: textColor }}>{s.replace(/-/g, " ")}</Text>
-            </TouchableOpacity>
+              <Text className="text-sm capitalize" style={{ color: severity === s ? severityColor(s) : theme.textSecondary }}>
+                {s}
+              </Text>
+            </Pressable>
           ))}
         </View>
 
-        <View className="p-4 rounded-xl mb-4" style={{ backgroundColor: bg }}>
-          <Text className="text-sm font-medium mb-2" style={{ color: textColor }}>Status</Text>
+        <Text style={labelStyle}>Status</Text>
+        <View className="flex-row flex-wrap">
           {STATUSES.map((s) => (
-            <TouchableOpacity
+            <Pressable
               key={s}
-              className="flex-row items-center p-3 rounded-lg mb-2 border"
-              style={{ borderColor: status === s ? "#2563eb" : isDark ? "#374151" : "#e5e7eb", backgroundColor: status === s ? "#eff6ff" : bg }}
               onPress={() => setStatus(s)}
+              className="mr-2 mb-2 px-3 py-1.5 rounded-full"
+              style={{
+                backgroundColor: status === s ? COLORS.primary[600] : isDark ? '#334155' : '#e2e8f0',
+              }}
             >
-              <Ionicons name={status === s ? "radio-button-on" : "radio-button-off"} size={20} color="#2563eb" />
-              <Text className="ml-2 capitalize" style={{ color: textColor }}>{s.replace(/-/g, " ")}</Text>
-            </TouchableOpacity>
+              <Text className="text-sm capitalize" style={{ color: status === s ? '#fff' : theme.textSecondary }}>
+                {s}
+              </Text>
+            </Pressable>
           ))}
         </View>
 
-        <View className="p-4 rounded-xl mb-4" style={{ backgroundColor: bg }}>
-          <Text className="text-sm font-medium mb-2" style={{ color: textColor }}>Location</Text>
-          <TextInput
-            className="p-3 rounded-lg border"
-            style={{ borderColor: isDark ? "#374151" : "#e5e7eb", color: textColor }}
-            placeholder="e.g. Level 2, Room 204"
-            placeholderTextColor={mutedColor}
-            value={location}
-            onChangeText={setLocation}
-          />
-        </View>
-
-        <View className="p-4 rounded-xl mb-4" style={{ backgroundColor: bg }}>
-          <Text className="text-sm font-medium mb-2" style={{ color: textColor }}>Assignee</Text>
-          <TextInput
-            className="p-3 rounded-lg border"
-            style={{ borderColor: isDark ? "#374151" : "#e5e7eb", color: textColor }}
-            placeholder="Name or email"
-            placeholderTextColor={mutedColor}
-            value={assignee}
-            onChangeText={setAssignee}
-          />
-        </View>
-
-        <View className="p-4 rounded-xl mb-4" style={{ backgroundColor: bg }}>
-          <Text className="text-sm font-medium mb-2" style={{ color: textColor }}>Description</Text>
-          <TextInput
-            className="p-3 rounded-lg border"
-            style={{ borderColor: isDark ? "#374151" : "#e5e7eb", color: textColor, height: 100, textAlignVertical: "top" }}
-            placeholder="Add details..."
-            placeholderTextColor={mutedColor}
-            multiline
-            value={description}
-            onChangeText={setDescription}
-          />
-        </View>
-
-        <TouchableOpacity
-          className="p-4 rounded-xl items-center"
-          style={{ backgroundColor: loading || !title.trim() ? "#9ca3af" : "#2563eb" }}
-          onPress={handleCreate}
+        <Pressable
+          className="p-4 rounded-xl items-center mb-8 mt-4"
+          style={{
+            backgroundColor: loading || !title.trim() ? '#9ca3af' : COLORS.primary[600],
+          }}
+          onPress={handleSubmit}
           disabled={loading || !title.trim()}
         >
-          <Text className="text-white font-semibold">{loading ? "Creating..." : "Create Punch Item"}</Text>
-        </TouchableOpacity>
+          <Text className="text-white font-semibold">
+            {loading ? 'Creating...' : 'Create Punch Item'}
+          </Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );

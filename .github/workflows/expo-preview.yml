@@ -5,6 +5,17 @@ env:
 on:
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to build'
+        required: true
+        default: 'ios'
+        type: choice
+        options:
+          - ios
+          - android
+          - all
 
 jobs:
   preview:
@@ -16,6 +27,6 @@ jobs:
       - run: npm ci --legacy-peer-deps
         working-directory: ./
       - run: npm install -g eas-cli
-      - run: npx eas build --profile preview --platform ios --non-interactive
+      - run: npx eas build --profile preview --platform ${{ github.event.inputs.platform || 'ios' }} --non-interactive
         working-directory: ./
         env: { EXPO_TOKEN: "${{ secrets.EXPO_TOKEN }}" }
