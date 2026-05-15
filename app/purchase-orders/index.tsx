@@ -1,27 +1,34 @@
 import { View, Text, FlatList, Pressable, RefreshControl, useColorScheme } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePurchaseOrdersStore } from '../../stores/purchaseOrdersStore';
 import { Card } from '../../components/ui/Card';
-import { colors } from '../../constants/colors';
+import { COLORS } from '../../constants/theme';
 
-const STATUS_OPTIONS: Array<'all' | 'draft' | 'sent' | 'acknowledged' | 'partially_delivered' | 'delivered' | 'invoiced' | 'paid' | 'cancelled'> = [
-  'all', 'draft', 'sent', 'acknowledged', 'partially_delivered', 'delivered', 'invoiced', 'paid', 'cancelled'
+const STATUS_OPTIONS: { key: string; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'draft', label: 'Draft' },
+  { key: 'sent', label: 'Sent' },
+  { key: 'acknowledged', label: 'Acknowledged' },
+  { key: 'delivered', label: 'Delivered' },
+  { key: 'paid', label: 'Paid' },
 ];
 
 export default function PurchaseOrdersScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const theme = isDark ? COLORS.dark : COLORS.light;
+
   const { purchaseOrders, fetchPurchaseOrders, loading } = usePurchaseOrdersStore();
-  const [filterStatus, setFilterStatus] = useState<typeof STATUS_OPTIONS[number]>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [refreshing, setRefreshing] = useState(false);
 
-  const filteredOrders = filterStatus === 'all'
-    ? purchaseOrders
-    : purchaseOrders.filter((o) => o.status === filterStatus);
+  useEffect(() => {
+    fetchPurchaseOrders();
+  }, [fetchPurchaseOrders]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -29,66 +36,64 @@ export default function PurchaseOrdersScreen() {
     setRefreshing(false);
   }, [fetchPurchaseOrders]);
 
+  const filtered = filterStatus === 'all'
+    ? purchaseOrders
+    : purchaseOrders.filter((o) => o.status === filterStatus);
+
   const statusColor = (status: string) => {
     switch (status) {
-      case 'paid': return colors.success;
-      case 'invoiced': return colors.info;
-      case 'delivered': return colors.primary;
-      case 'partially_delivered': return '#8b5cf6';
-      case 'acknowledged': return '#10b981';
-      case 'sent': return colors.warning;
-      case 'draft': return colors.gray;
-      case 'cancelled': return colors.danger;
-      default: return colors.gray;
+      case 'paid': return COLORS.success;
+      case 'delivered': return COLORS.success;
+      case 'partially_delivered': return COLORS.warning;
+      case 'acknowledged': return COLORS.info;
+      case 'sent': return COLORS.info;
+      case 'draft': return theme.textMuted;
+      case 'cancelled': return COLORS.danger;
+      default: return theme.textMuted;
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return `£${value.toFixed(2)}`;
-  };
-
-  const formatStatusLabel = (s: string) => {
-    if (s === 'partially_delivered') return 'Part. Delivered';
-    return s.charAt(0).toUpperCase() + s.slice(1);
-  };
-
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#111827' : '#f9fafb' }} edges={['top']}>
-      <View className="flex-1 bg-gray-50 dark:bg-gray-900">
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
+      <View className="flex-1" style={{ backgroundColor: theme.bg }}>
         <View className="p-4">
           <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-2xl font-bold text-gray-900 dark:text-white">Purchase Orders</Text>
+            <Text className="text-2xl font-bold" style={{ color: theme.text }}>Purchase Orders</Text>
             <Pressable
               onPress={() => router.push('/purchase-orders/create')}
-              className="bg-blue-600 px-4 py-2 rounded-lg flex-row items-center"
+              className="px-4 py-2 rounded-lg flex-row items-center"
+              style={{ backgroundColor: COLORS.primary[600] }}
             >
               <Ionicons name="add" size={20} color="white" />
               <Text className="text-white font-semibold ml-1">New</Text>
             </Pressable>
           </View>
 
-          {/* Filters */}
           <View className="flex-row mb-4 flex-wrap">
             {STATUS_OPTIONS.map((s) => (
               <Pressable
-                key={s}
-                onPress={() => setFilterStatus(s)}
-                className={`mr-2 mb-2 px-3 py-1.5 rounded-full ${
-                  filterStatus === s ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
-                }`}
+                key={s.key}
+                onPress={() => setFilterStatus(s.key)}
+                className="mr-2 mb-2 px-3 py-1.5 rounded-full"
+                style={{
+                  backgroundColor: filterStatus === s.key ? COLORS.primary[600] : isDark ? '#334155' : '#e2e8f0',
+                }}
               >
-                <Text className={`text-sm ${filterStatus === s ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
-                  {s === 'all' ? 'All' : formatStatusLabel(s)}
+                <Text
+                  className="text-sm"
+                  style={{ color: filterStatus === s.key ? '#fff' : theme.textSecondary }}
+                >
+                  {s.label}
                 </Text>
               </Pressable>
             ))}
           </View>
 
           <FlatList
-            data={filteredOrders}
+            data={filtered}
             keyExtractor={(item) => item.id}
             refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.text} />
             }
             renderItem={({ item }) => (
               <Card className="mb-3">
@@ -98,9 +103,11 @@ export default function PurchaseOrdersScreen() {
                 >
                   <View className="flex-row justify-between items-start">
                     <View className="flex-1">
-                      <Text className="text-base font-semibold text-gray-900 dark:text-white">{item.title}</Text>
-                      <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {item.poNumber} · {item.projectName}
+                      <Text className="text-base font-semibold" style={{ color: theme.text }}>
+                        {item.poNumber} — {item.title}
+                      </Text>
+                      <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
+                        {item.projectName}
                       </Text>
                     </View>
                     <View
@@ -111,42 +118,37 @@ export default function PurchaseOrdersScreen() {
                         className="text-xs font-semibold capitalize"
                         style={{ color: statusColor(item.status) }}
                       >
-                        {formatStatusLabel(item.status)}
+                        {item.status.replace(/_/g, ' ')}
                       </Text>
                     </View>
                   </View>
 
                   <View className="flex-row justify-between items-center mt-3">
-                    <View className="flex-row items-center">
-                      <Ionicons name="business-outline" size={14} color={colors.gray} />
-                      <Text className="text-xs text-gray-500 ml-1">{item.vendorName}</Text>
-                    </View>
-                    <Text className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(item.total)}</Text>
+                    <Text className="text-xs" style={{ color: theme.textMuted }}>
+                      {item.vendorName}
+                    </Text>
+                    <Text className="text-sm font-semibold" style={{ color: theme.text }}>
+                      £{item.total?.toLocaleString() || '0'}
+                    </Text>
                   </View>
 
-                  {item.deliveryDate && (
+                  {item.deliveryDate ? (
                     <View className="flex-row items-center mt-2">
-                      <Ionicons name="calendar-outline" size={14} color={colors.gray} />
-                      <Text className="text-xs text-gray-500 ml-1">
-                        Delivery {new Date(item.deliveryDate).toLocaleDateString()}
+                      <Ionicons name="calendar-outline" size={14} color={theme.textMuted} />
+                      <Text className="text-xs ml-1" style={{ color: theme.textMuted }}>
+                        Delivery: {item.deliveryDate}
                       </Text>
                     </View>
-                  )}
-
-                  {item.items.length > 0 && (
-                    <Text className="text-xs text-gray-500 mt-2">
-                      {item.items.length} item{item.items.length !== 1 ? 's' : ''}
-                    </Text>
-                  )}
+                  ) : null}
                 </Pressable>
               </Card>
             )}
             ListEmptyComponent={
               <View className="items-center py-12">
-                <Ionicons name="receipt-outline" size={48} color={colors.gray} />
-                <Text className="text-gray-500 mt-4 text-center">
+                <Ionicons name="receipt-outline" size={48} color={theme.textMuted} />
+                <Text className="mt-4 text-center" style={{ color: theme.textSecondary }}>
                   {filterStatus !== 'all'
-                    ? `No ${formatStatusLabel(filterStatus)} purchase orders`
+                    ? `No ${filterStatus.replace(/_/g, ' ')} purchase orders`
                     : 'No purchase orders yet.\nTap "New" to create one.'}
                 </Text>
               </View>
