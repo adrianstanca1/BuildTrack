@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ONBOARDING_KEY } from '../constants/storage';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import { CompanyProvider } from '../contexts/CompanyContext';
 import { registerForPushNotifications, addNotificationResponseListener } from '../lib/pushNotifications';
 
 SplashScreen.preventAutoHideAsync();
@@ -82,8 +83,9 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <StatusBar style="auto" />
         <AuthProvider>
-          <AuthGuard>
-            <Stack screenOptions={{ headerShown: false }}>
+          <CompanyProvider>
+            <AuthGuard>
+              <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="auth" />
               <Stack.Screen name="onboarding" />
@@ -119,7 +121,8 @@ export default function RootLayout() {
               <Stack.Screen name="change-orders" />
             </Stack>
           </AuthGuard>
-        </AuthProvider>
+        </CompanyProvider>
+      </AuthProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
   );
