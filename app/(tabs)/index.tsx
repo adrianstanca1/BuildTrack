@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
+import { useProjectsStore } from '../../stores/projectsStore';
 import { COLORS } from '../../constants/theme';
 
 interface Project {
@@ -31,6 +32,7 @@ export default function DashboardScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const theme = isDark ? COLORS.dark : COLORS.light;
+  const { selectedProject } = useProjectsStore();
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -111,6 +113,43 @@ export default function DashboardScreen() {
             </View>
           ))}
         </View>
+
+        {/* Check-in widget */}
+        <TouchableOpacity
+          onPress={() => router.push('/check-ins')}
+          style={{
+            marginHorizontal: 16,
+            marginBottom: 16,
+            backgroundColor: isDark ? '#1e293b' : '#fff',
+            borderRadius: 16,
+            padding: 16,
+            flexDirection: 'row',
+            alignItems: 'center',
+            shadowColor: '#000',
+            shadowOpacity: isDark ? 0 : 0.04,
+            shadowRadius: 8,
+          }}
+        >
+          <View style={{
+            width: 48,
+            height: 48,
+            borderRadius: 24,
+            backgroundColor: '#22c55e20',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Ionicons name="location-sharp" size={22} color="#22c55e" />
+          </View>
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: theme.text }}>
+              {selectedProject?.name ? `Check in at ${selectedProject.name}` : 'Check in / Check out'}
+            </Text>
+            <Text style={{ fontSize: 13, color: theme.textSecondary, marginTop: 2 }}>
+              Tap to view today’s attendance, clock in/out, and recent check-ins
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
+        </TouchableOpacity>
 
         {/* Search */}
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>

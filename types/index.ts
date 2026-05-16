@@ -115,3 +115,21 @@ export interface TierLimits {
   has_priority_support: boolean;
   price_monthly_gbp: number;
 }
+
+export interface CheckIn {
+  id: string;
+  user_id: string;
+  worker_name?: string;
+  project_id: string;
+  checkInTime: string;
+  checkOutTime?: string;
+  checkInLat?: number;
+  checkInLng?: number;
+  checkOutLat?: number;
+  checkOutLng?: number;
+  gpsVerified?: boolean;
+  distanceFromSite?: number;
+  durationMinutes?: number;
+  created_at: string;
+}
+
