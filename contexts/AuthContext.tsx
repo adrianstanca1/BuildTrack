@@ -12,14 +12,14 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
+  signInWithProvider: (provider: 'google' | 'microsoft' | 'apple' | 'github') => Promise<void>;
+  signInWithBiometric: () => Promise<{ success: boolean; error?: string }>;
   isBiometricAvailable: boolean;
   isBiometricEnabled: boolean;
   authProvider: TrackedAuthProvider | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  signInWithProvider: (provider: Provider) => Promise<void>;
-  signInWithBiometric: () => Promise<{ success: boolean; error?: string }>;
   enableBiometric: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   disableBiometric: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -34,7 +34,7 @@ const BIOMETRIC_PASSWORD_KEY = '@buildtrack/biometric_password';
 
 function normalizeProvider(p: Provider): TrackedAuthProvider | null {
   if (p === 'google') return 'google';
-  if (p === 'azure' || p === 'microsoft') return 'microsoft';
+  if (p === 'azure') return 'microsoft';
   return null;
 }
 
@@ -133,9 +133,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Don't clear biometric credentials on sign out - user might want to use them again
   }, []);
 
-  const signInWithProvider = useCallback(async (provider: Provider) => {
+  const signInWithProvider = useCallback(async (provider: any) => {
     const { error } = await supabase.auth.signInWithOAuth({
-      provider,
+      provider: provider === 'microsoft' ? 'azure' : (provider as Provider),
       options: {
         redirectTo: 'buildtrack://auth/callback',
       },
