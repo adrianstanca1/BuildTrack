@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, TYPOGRAPHY } from '../../constants/theme';
 
 interface SocialAuthButtonProps {
-  provider: 'google' | 'apple' | 'github';
+  provider: 'google' | 'apple' | 'github' | 'microsoft';
   onPress: () => void;
   isLoading?: boolean;
   disabled?: boolean;
@@ -30,6 +30,13 @@ const providerConfig = {
     bg: '#24292f',
     text: '#ffffff',
     border: '#24292f',
+  },
+  microsoft: {
+    icon: 'logo-microsoft' as const,
+    label: 'Continue with Microsoft',
+    bg: '#ffffff',
+    text: '#1f2937',
+    border: '#e5e7eb',
   },
 };
 
