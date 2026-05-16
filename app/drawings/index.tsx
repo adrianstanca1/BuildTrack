@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../../components/ui/Card';
 import { COLORS } from '../../constants/theme';
 import { supabase } from '../../lib/supabase';
+import { useDrawingPinsStore } from '../../stores/drawingPinsStore';
 
 type Drawing = {
   id: string;
@@ -28,6 +29,8 @@ export default function DrawingsScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const theme = isDark ? COLORS.dark : COLORS.light;
+
+  const { countsByDrawing, fetchCounts } = useDrawingPinsStore();
 
   const [drawings, setDrawings] = useState<Drawing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,12 +57,13 @@ export default function DrawingsScreen() {
 
   useEffect(() => {
     fetchDrawings();
-  }, [fetchDrawings]);
+    fetchCounts();
+  }, [fetchDrawings, fetchCounts]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchDrawings();
-  }, [fetchDrawings]);
+    await Promise.all([fetchDrawings(), fetchCounts()]);
+  }, [fetchDrawings, fetchCounts]);
 
   const disciplineIcon = (discipline: string) => {
     switch (discipline?.toLowerCase()) {
@@ -181,7 +185,9 @@ export default function DrawingsScreen() {
               refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.text} />
               }
-              renderItem={({ item }) => (
+              renderItem={({ item }) => {
+                const pinCount = countsByDrawing[item.id] || 0;
+                return (
                 <Card className="mb-3">
                   <Pressable
                     onPress={() => router.push(`/drawings/${item.id}`)}
@@ -201,16 +207,18 @@ export default function DrawingsScreen() {
                           <Text className="text-xs mt-1" style={{ color: theme.textMuted }}>Rev: {item.revision}</Text>
                         </View>
                       </View>
-                      <View
-                        className="px-2 py-1 rounded-full"
-                        style={{ backgroundColor: statusColor(item.status) + '22' }}
-                      >
-                        <Text
-                          className="text-xs font-semibold capitalize"
-                          style={{ color: statusColor(item.status) }}
+                      <View className="items-end">
+                        <View
+                          className="px-2 py-1 rounded-full"
+                          style={{ backgroundColor: statusColor(item.status) + '22' }}
                         >
-                          {item.status}
-                        </Text>
+                          <Text
+                            className="text-xs font-semibold capitalize"
+                            style={{ color: statusColor(item.status) }}
+                          >
+                            {item.status}
+                          </Text>
+                        </View>
                       </View>
                     </View>
 
@@ -219,16 +227,29 @@ export default function DrawingsScreen() {
                         <Ionicons name="person-outline" size={14} color={theme.textMuted} />
                         <Text className="text-xs ml-1" style={{ color: theme.textSecondary }}>{item.uploaded_by}</Text>
                       </View>
-                      {item.file_url ? (
-                        <View className="flex-row items-center">
-                          <Ionicons name="attach-outline" size={14} color={theme.textMuted} />
-                          <Text className="text-xs ml-1" style={{ color: theme.textSecondary }}>Attachment</Text>
-                        </View>
-                      ) : null}
+                      <View className="flex-row items-center">
+                        {pinCount > 0 && (
+                          <View
+                            className="flex-row items-center mr-2 px-2 py-0.5 rounded-full"
+                            style={{ backgroundColor: isDark ? '#7f1d1d' : '#fee2e2' }}
+                          >
+                            <Ionicons name="location" size={12} color={isDark ? '#fca5a5' : '#ef4444'} />
+                            <Text className="text-xs ml-1 font-semibold" style={{ color: isDark ? '#fca5a5' : '#ef4444' }}>
+                              {pinCount} pin{pinCount !== 1 ? 's' : ''}
+                            </Text>
+                          </View>
+                        )}
+                        {item.file_url ? (
+                          <View className="flex-row items-center">
+                            <Ionicons name="attach-outline" size={14} color={theme.textMuted} />
+                            <Text className="text-xs ml-1" style={{ color: theme.textSecondary }}>Attachment</Text>
+                          </View>
+                        ) : null}
+                      </View>
                     </View>
                   </Pressable>
                 </Card>
-              )}
+              );}}
               ListEmptyComponent={
                 <View className="items-center py-12">
                   <Ionicons name="map-outline" size={48} color={theme.textMuted} />
