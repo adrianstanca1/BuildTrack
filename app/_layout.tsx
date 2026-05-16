@@ -9,7 +9,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ONBOARDING_KEY } from '../constants/storage';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { CompanyProvider } from '../contexts/CompanyContext';
-import { registerForPushNotifications, addNotificationResponseListener } from '../lib/pushNotifications';
+import {
+  registerForPushNotificationsAsync,
+  addPushNotificationListener,
+  addNotificationResponseListener,
+  unregisterPushTokenAsync,
+} from '../lib/pushNotifications';
+import { Toast } from '../components/ui/Toast';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -18,6 +24,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const segments = useSegments();
   const router = useRouter();
   const [hasOnboarded, setHasOnboarded] = useState<boolean | null>(null);
+  const [toast, setToast] = useState<{ visible: boolean; message: string }>({
+    visible: false,
+    message: '',
+  });
 
   useEffect(() => {
     AsyncStorage.getItem(ONBOARDING_KEY).then((value) => {
@@ -25,10 +35,19 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  // Register push notifications when authenticated
+  // Register push notifications when authenticated; unregister on logout
   useEffect(() => {
     if (user) {
-      registerForPushNotifications().catch(console.error);
+      registerForPushNotificationsAsync().catch(console.error);
+
+      const unsubForeground = addPushNotificationListener((notification) => {
+        const { title, body } = notification.request.content;
+        setToast({
+          visible: true,
+          message: `${title ?? ''}${title && body ? ' • ' : ''}${body ?? ''}` || 'New notification',
+        });
+      });
+
       const unsubResponse = addNotificationResponseListener((response) => {
         const data = response.notification.request.content.data as any;
         if (data?.relatedId) {
@@ -41,9 +60,13 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
           }
         }
       });
+
       return () => {
+        unsubForeground();
         unsubResponse();
       };
+    } else {
+      unregisterPushTokenAsync().catch(console.error);
     }
   }, [user]);
 
@@ -62,7 +85,18 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoading, segments, hasOnboarded]);
 
-  return <>{children}</>;
+  return (
+    <>
+      <Toast
+        message={toast.message}
+        type="info"
+        visible={toast.visible}
+        onDismiss={() => setToast({ visible: false, message: '' })}
+        duration={4000}
+      />
+      {children}
+    </>
+  );
 }
 
 export default function RootLayout() {
