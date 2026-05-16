@@ -8,7 +8,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "postinstall": "patch-package || true && node scripts/patch-expo-router.js || true"
+    "postinstall": "patch-package || true && node scripts/patch-expo-router.js || true && rm -rf node_modules/@nozbe/watermelondb/node_modules/react node_modules/@nozbe/watermelondb/node_modules/react-dom || true"
   },
   "dependencies": {
     "@babel/plugin-transform-react-jsx": "^7.28.6",
