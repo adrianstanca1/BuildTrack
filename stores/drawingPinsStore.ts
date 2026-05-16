@@ -3,10 +3,28 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { useSyncStore } from './syncStore';
-import type { DrawingPin, DrawingPinType } from '../types/field';
+import type { DrawingPin, DrawingPinStatus } from '../types/field';
+
+interface DrawingPinSupabase {
+  id: string;
+  drawing_id: string;
+  x: number;
+  y: number;
+  type: string;
+  title?: string;
+  description?: string;
+  label?: string;
+  status: DrawingPinStatus;
+  related_id?: string;
+  created_by?: string;
+  assigned_to?: string;
+  created_at: string;
+  updated_at?: string;
+}
 
 interface DrawingPinsState {
   pins: DrawingPin[];
+  countsByDrawing: Record<string, number>;
   loading: boolean;
   error: string | null;
 
@@ -18,17 +36,36 @@ interface DrawingPinsState {
   setError: (error: string | null) => void;
 
   getPinsByDrawing: (drawingId: string) => DrawingPin[];
-  getPinsByType: (type: DrawingPinType) => DrawingPin[];
 
   fetchPins: (drawingId?: string) => Promise<void>;
+  fetchCounts: () => Promise<void>;
   createPin: (pin: Omit<DrawingPin, 'id' | 'createdAt'>) => Promise<DrawingPin | null>;
   deletePin: (id: string) => Promise<void>;
+}
+
+function fromSupabase(row: DrawingPinSupabase): DrawingPin {
+  return {
+    id: row.id,
+    drawingId: row.drawing_id ?? '',
+    x: row.x ?? 0,
+    y: row.y ?? 0,
+    type: (row.type as any) ?? 'note',
+    title: row.title ?? row.label ?? undefined,
+    label: row.label ?? undefined,
+    description: row.description ?? undefined,
+    relatedId: row.related_id ?? undefined,
+    createdBy: row.created_by ?? undefined,
+    assignedTo: row.assigned_to ?? undefined,
+    status: row.status ?? 'open',
+    createdAt: row.created_at ?? new Date().toISOString(),
+  };
 }
 
 export const useDrawingPinsStore = create<DrawingPinsState>()(
   persist(
     (set, get) => ({
       pins: [],
+      countsByDrawing: {},
       loading: false,
       error: null,
 
@@ -50,7 +87,6 @@ export const useDrawingPinsStore = create<DrawingPinsState>()(
       setError: (error) => set({ error }),
 
       getPinsByDrawing: (drawingId) => get().pins.filter((p) => p.drawingId === drawingId),
-      getPinsByType: (type) => get().pins.filter((p) => p.type === type),
 
       fetchPins: async (drawingId) => {
         set({ loading: true, error: null });
@@ -62,22 +98,30 @@ export const useDrawingPinsStore = create<DrawingPinsState>()(
 
           if (error) throw error;
 
-          const pins: DrawingPin[] = (data || []).map((item: any) => ({
-            id: item.id,
-            drawingId: item.drawing_id ?? '',
-            x: item.x ?? 0,
-            y: item.y ?? 0,
-            type: item.type ?? 'note',
-            title: item.title ?? undefined,
-            description: item.description ?? undefined,
-            relatedId: item.related_id ?? undefined,
-            createdBy: item.created_by ?? undefined,
-            createdAt: item.created_at ?? new Date().toISOString(),
-          }));
+          const pins: DrawingPin[] = (data || []).map((item: any) => fromSupabase(item));
 
           set({ pins, loading: false });
         } catch (err) {
           set({ error: err instanceof Error ? err.message : 'Failed to fetch pins', loading: false });
+        }
+      },
+
+      fetchCounts: async () => {
+        try {
+          // Fetch all pin id+drawing_id rows (lightweight)
+          const { data, error } = await supabase
+            .from('drawing_pins')
+            .select('drawing_id');
+          if (error) throw error;
+          const counts: Record<string, number> = {};
+          (data || []).forEach((row: any) => {
+            if (row.drawing_id) {
+              counts[row.drawing_id] = (counts[row.drawing_id] || 0) + 1;
+            }
+          });
+          set({ countsByDrawing: counts });
+        } catch (err) {
+          console.error('Failed to fetch pin counts', err);
         }
       },
 
@@ -90,6 +134,7 @@ export const useDrawingPinsStore = create<DrawingPinsState>()(
             y: pinData.y,
             type: pinData.type,
             title: pinData.title,
+            label: pinData.label,
             description: pinData.description,
             related_id: pinData.relatedId,
           };
@@ -105,18 +150,7 @@ export const useDrawingPinsStore = create<DrawingPinsState>()(
             return null;
           }
 
-          const pin: DrawingPin = {
-            id: data.id,
-            drawingId: data.drawing_id ?? '',
-            x: data.x ?? 0,
-            y: data.y ?? 0,
-            type: data.type ?? 'note',
-            title: data.title ?? undefined,
-            description: data.description ?? undefined,
-            relatedId: data.related_id ?? undefined,
-            createdBy: data.created_by ?? undefined,
-            createdAt: data.created_at ?? new Date().toISOString(),
-          };
+          const pin: DrawingPin = fromSupabase(data);
 
           set((state) => ({ pins: [pin, ...state.pins], loading: false }));
           return pin;

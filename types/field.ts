@@ -11,7 +11,7 @@ export type TimesheetCategory = 'regular' | 'overtime' | 'weekend' | 'holiday' |
 export type RfiStatus = 'draft' | 'submitted' | 'open' | 'answered' | 'closed';
 export type SubmittalStatus = 'draft' | 'submitted' | 'under-review' | 'approved' | 'rejected';
 export type DrawingStatus = 'active' | 'superseded' | 'archived';
-export type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'paid' | 'overdue';
+export type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 
 export type PunchItemStatus = 'open' | 'in-progress' | 'resolved' | 'closed';
 export type PunchItemSeverity = 'cosmetic' | 'minor' | 'major' | 'critical';
@@ -29,6 +29,7 @@ export type EquipmentStatus = 'available' | 'rented' | 'on_site' | 'under_mainte
 
 export type MaterialCategory = 'concrete' | 'steel' | 'timber' | 'brick' | 'block' | 'insulation' | 'roofing' | 'electrical' | 'plumbing' | 'paint' | 'hardware' | 'aggregate' | 'other';
 
+export type DrawingPinStatus = 'open' | 'in_progress' | 'resolved' | 'rejected';
 export type DrawingPinType = 'defect' | 'rfi' | 'note' | 'task';
 
 export interface DrawingPin {
@@ -38,9 +39,12 @@ export interface DrawingPin {
   y: number;
   type: DrawingPinType;
   title?: string;
+  label?: string;
   description?: string;
   relatedId?: string;
   createdBy?: string;
+  assignedTo?: string;
+  status?: DrawingPinStatus;
   createdAt: string;
 }
 
@@ -159,6 +163,36 @@ export interface Invoice {
   issueDate: string;
   dueDate?: string;
   paidDate?: string;
+  createdAt: string;
+  companyId?: string;
+  /** total amount stored on invoices table if available */
+  totalAmount?: number;
+  vatAmount?: number;
+  cisDeduction?: number;
+  netTotal?: number;
+  lineItems?: InvoiceLineItem[];
+  cisSummary?: InvoiceCisSummary;
+}
+
+export interface InvoiceLineItem {
+  id: string;
+  invoiceId: string;
+  itemDescription: string;
+  quantity: number;
+  unitPrice: number;
+  vatRate: number;
+  cisRate: number;
+  cisDeduction: number;
+  amount: number;
+  createdAt: string;
+}
+
+export interface InvoiceCisSummary {
+  id: string;
+  invoiceId: string;
+  grossAmount: number;
+  cisDeduction: number;
+  netAmount: number;
   createdAt: string;
 }
 
