@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { supabase } from '../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as LocalAuthentication from 'expo-local-authentication';
+import { unregisterPushTokenAsync } from '../lib/pushNotifications';
 import type { Session, User, Provider } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -92,6 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    await unregisterPushTokenAsync().catch(() => {});
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     // Don't clear biometric credentials on sign out - user might want to use them again
