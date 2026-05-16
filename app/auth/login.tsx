@@ -16,12 +16,16 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Button, Input, Divider, SocialAuthButton } from '../../components/ui';
 import { COLORS, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { signInWithSSO } from '../../lib/auth';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showBiometric, setShowBiometric] = useState(false);
+  const [showSSOInput, setShowSSOInput] = useState(false);
+  const [ssoDomain, setSsoDomain] = useState('');
+  const [ssoLoading, setSsoLoading] = useState(false);
 
   const { signIn, signInWithProvider, signInWithBiometric, isLoading, isBiometricAvailable, isBiometricEnabled } = useAuth();
   const router = useRouter();
@@ -80,12 +84,28 @@ export default function LoginScreen() {
     }
   };
 
-  const handleSocialLogin = async (provider: 'google' | 'apple' | 'github') => {
+  const handleSocialLogin = async (provider: 'google' | 'microsoft') => {
     try {
       setErrors({});
       await signInWithProvider(provider);
     } catch (err: any) {
       setErrors({ general: err.message || `Failed to sign in with ${provider}` });
+    }
+  };
+
+  const handleSSOLogin = async () => {
+    if (!ssoDomain.trim()) {
+      setErrors({ general: 'Please enter a company domain' });
+      return;
+    }
+    try {
+      setSsoLoading(true);
+      setErrors({});
+      await signInWithSSO(ssoDomain.trim());
+    } catch (err: any) {
+      setErrors({ general: err.message || 'SSO sign in failed' });
+    } finally {
+      setSsoLoading(false);
     }
   };
 
@@ -256,14 +276,89 @@ export default function LoginScreen() {
                 onPress={() => handleSocialLogin('google')}
                 disabled={isLoading}
               />
-              {Platform.OS === 'ios' && (
-                <SocialAuthButton
-                  provider="apple"
-                  onPress={() => handleSocialLogin('apple')}
-                  disabled={isLoading}
-                />
-              )}
+              <SocialAuthButton
+                provider="microsoft"
+                onPress={() => handleSocialLogin('microsoft')}
+                disabled={isLoading}
+              />
             </View>
+
+            {/* Enterprise SSO */}
+            <TouchableOpacity
+              onPress={() => setShowSSOInput((v) => !v)}
+              activeOpacity={0.7}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: 16,
+                paddingVertical: 14,
+                borderRadius: RADIUS.lg,
+                borderWidth: 1.5,
+                borderColor: c.border,
+                backgroundColor: c.cardBg,
+              }}
+            >
+              <Ionicons
+                name="business-outline"
+                size={20}
+                color={c.text}
+                style={{ marginRight: 10 }}
+              />
+              <Text
+                style={{
+                  fontSize: TYPOGRAPHY.bodyMedium.size,
+                  fontWeight: TYPOGRAPHY.bodyMedium.weight,
+                  color: c.text,
+                }}
+              >
+                Enterprise SSO
+              </Text>
+              <Ionicons
+                name={showSSOInput ? 'chevron-up' : 'chevron-down'}
+                size={16}
+                color={c.textMuted}
+                style={{ marginLeft: 8 }}
+              />
+            </TouchableOpacity>
+
+            {showSSOInput && (
+              <View
+                style={{
+                  gap: 10,
+                  marginTop: 12,
+                  backgroundColor: c.cardBg,
+                  borderRadius: RADIUS.lg,
+                  padding: 16,
+                  borderWidth: 1,
+                  borderColor: c.border,
+                }}
+              >
+                <Input
+                  label="Company Domain"
+                  placeholder="your-company.com"
+                  iconLeft="globe-outline"
+                  value={ssoDomain}
+                  onChangeText={(text) => {
+                    setSsoDomain(text);
+                    if (errors.general) setErrors((prev) => ({ ...prev, general: '' }));
+                  }}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!ssoLoading && !isLoading}
+                />
+                <Button
+                  onPress={handleSSOLogin}
+                  isLoading={ssoLoading || isLoading}
+                  isDisabled={ssoLoading || isLoading}
+                  variant="secondary"
+                  size="md"
+                  iconLeft="key-outline"
+                >
+                  Sign in with SSO
+                </Button>
+              </View>
+            )}
 
             {/* Sign Up Link */}
             <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 28, marginBottom: 24 }}>

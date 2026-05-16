@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import * as Linking from 'expo-linking';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ONBOARDING_KEY } from '../constants/storage';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
@@ -16,6 +17,7 @@ import {
   unregisterPushTokenAsync,
 } from '../lib/pushNotifications';
 import { Toast } from '../components/ui/Toast';
+import { handleAuthCallback } from '../lib/auth';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -33,6 +35,28 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     AsyncStorage.getItem(ONBOARDING_KEY).then((value) => {
       setHasOnboarded(!!value);
     });
+  }, []);
+
+  // Handle deep-link OAuth callbacks
+  useEffect(() => {
+    const processUrl = async (url: string | null) => {
+      if (!url) return;
+      if (!url.includes('auth/callback')) return;
+      try {
+        await handleAuthCallback(url);
+      } catch (err) {
+        console.error('[DeepLink] Auth callback error:', err);
+      }
+    };
+
+    // Process the URL that launched the app
+    Linking.getInitialURL().then(processUrl);
+
+    // Listen for incoming deep links while app is open
+    const sub = Linking.addEventListener('url', ({ url }) => processUrl(url));
+    return () => {
+      sub.remove();
+    };
   }, []);
 
   // Register push notifications when authenticated; unregister on logout

@@ -3,7 +3,10 @@ import { supabase } from '../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { unregisterPushTokenAsync } from '../lib/pushNotifications';
+import { getAuthProvider, setAuthProvider } from '../lib/auth';
 import type { Session, User, Provider } from '@supabase/supabase-js';
+
+type TrackedAuthProvider = 'email' | 'google' | 'microsoft';
 
 interface AuthContextType {
   user: User | null;
@@ -11,6 +14,7 @@ interface AuthContextType {
   isLoading: boolean;
   isBiometricAvailable: boolean;
   isBiometricEnabled: boolean;
+  authProvider: TrackedAuthProvider | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -28,12 +32,19 @@ const BIOMETRIC_ENABLED_KEY = '@buildtrack/biometric_enabled';
 const BIOMETRIC_EMAIL_KEY = '@buildtrack/biometric_email';
 const BIOMETRIC_PASSWORD_KEY = '@buildtrack/biometric_password';
 
+function normalizeProvider(p: Provider): TrackedAuthProvider | null {
+  if (p === 'google') return 'google';
+  if (p === 'azure' || p === 'microsoft') return 'microsoft';
+  return null;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
   const [isBiometricEnabled, setIsBiometricEnabled] = useState(false);
+  const [authProvider, setAuthProviderState] = useState<TrackedAuthProvider | null>(null);
 
   // Check biometric availability
   useEffect(() => {
@@ -52,6 +63,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     checkBiometric();
   }, []);
+
+  // Track auth provider whenever the user changes
+  useEffect(() => {
+    let mounted = true;
+    if (!user) {
+      if (mounted) setAuthProviderState(null);
+      return;
+    }
+    getAuthProvider().then((provider) => {
+      if (!mounted) return;
+      if (provider) {
+        setAuthProviderState(provider);
+      } else if (user?.email) {
+        setAuthProviderState('email');
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [user]);
 
   // Listen for auth state
   useEffect(() => {
@@ -79,6 +110,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    await setAuthProvider('email');
+    setAuthProviderState('email');
   }, []);
 
   const signUp = useCallback(async (email: string, password: string) => {
@@ -96,6 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await unregisterPushTokenAsync().catch(() => {});
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    await setAuthProvider(null);
     // Don't clear biometric credentials on sign out - user might want to use them again
   }, []);
 
@@ -107,6 +141,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     });
     if (error) throw error;
+    const mapped = normalizeProvider(provider);
+    if (mapped) {
+      await setAuthProvider(mapped);
+      setAuthProviderState(mapped);
+    }
   }, []);
 
   const signInWithBiometric = useCallback(async () => {
@@ -196,6 +235,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isBiometricAvailable,
         isBiometricEnabled,
+        authProvider,
         signIn,
         signUp,
         signOut,
