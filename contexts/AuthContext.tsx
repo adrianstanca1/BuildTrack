@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { supabase } from '../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as LocalAuthentication from 'expo-local-authentication';
+import * as SecureStore from 'expo-secure-store';
 import { unregisterPushTokenAsync } from '../lib/pushNotifications';
 import { getAuthProvider, setAuthProvider } from '../lib/auth';
 import type { Session, User, Provider } from '@supabase/supabase-js';
@@ -30,7 +31,46 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const BIOMETRIC_ENABLED_KEY = '@buildtrack/biometric_enabled';
 const BIOMETRIC_EMAIL_KEY = '@buildtrack/biometric_email';
-const BIOMETRIC_PASSWORD_KEY = '@buildtrack/biometric_password';
+// Stored in expo-secure-store (Keychain on iOS, EncryptedSharedPreferences on
+// Android). SecureStore keys cannot contain `/`, so we use a different shape
+// from the AsyncStorage namespace prefix used elsewhere.
+const BIOMETRIC_PASSWORD_KEY = 'buildtrack_biometric_password';
+// Legacy AsyncStorage key — kept only for one-time migration of returning
+// users whose plaintext password was written to AsyncStorage before this
+// SecureStore migration. See `migrateLegacyBiometricPassword` below.
+const LEGACY_BIOMETRIC_PASSWORD_KEY = '@buildtrack/biometric_password';
+
+// SecureStore options used for the biometric password.
+// We rely on `WHEN_UNLOCKED` (the entry is readable while the device is
+// unlocked) and gate access via `LocalAuthentication.authenticateAsync` at
+// the JS layer — using `requireAuthentication: true` here as well would
+// cause a second native biometric prompt on every read.
+const SECURE_STORE_OPTIONS: SecureStore.SecureStoreOptions = {
+  keychainAccessible: SecureStore.WHEN_UNLOCKED,
+};
+
+/**
+ * One-time migration: if a returning user has their plaintext password
+ * still sitting in AsyncStorage (pre-SecureStore), move it into SecureStore
+ * and delete the AsyncStorage entry. Safe to call repeatedly — it no-ops
+ * once the legacy key is gone.
+ */
+async function migrateLegacyBiometricPassword(): Promise<void> {
+  try {
+    const legacy = await AsyncStorage.getItem(LEGACY_BIOMETRIC_PASSWORD_KEY);
+    if (!legacy) return;
+    await SecureStore.setItemAsync(
+      BIOMETRIC_PASSWORD_KEY,
+      legacy,
+      SECURE_STORE_OPTIONS,
+    );
+    await AsyncStorage.removeItem(LEGACY_BIOMETRIC_PASSWORD_KEY);
+  } catch {
+    // Best-effort: a failed migration leaves the legacy entry in place so we
+    // can retry on the next biometric attempt. Do not throw — we don't want
+    // to break the boot path if SecureStore is briefly unavailable.
+  }
+}
 
 function normalizeProvider(p: Provider): TrackedAuthProvider | null {
   if (p === 'google') return 'google';
@@ -46,7 +86,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isBiometricEnabled, setIsBiometricEnabled] = useState(false);
   const [authProvider, setAuthProviderState] = useState<TrackedAuthProvider | null>(null);
 
-  // Check biometric availability
+  // Check biometric availability + migrate any legacy plaintext password
+  // from AsyncStorage into SecureStore on first run after upgrade.
   useEffect(() => {
     const checkBiometric = async () => {
       try {
@@ -56,6 +97,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const enabled = await AsyncStorage.getItem(BIOMETRIC_ENABLED_KEY);
         setIsBiometricEnabled(enabled === 'true');
+
+        // Fire-and-forget: only relevant for upgraders, no-op otherwise.
+        migrateLegacyBiometricPassword();
       } catch {
         setIsBiometricAvailable(false);
         setIsBiometricEnabled(false);
@@ -166,9 +210,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: false, error: result.error || 'Authentication failed' };
       }
 
+      // Belt-and-braces: ensure any legacy plaintext password has been
+      // migrated out of AsyncStorage before reading from SecureStore. This
+      // handles the case where the boot-time migration was skipped or
+      // raced (e.g. user opens biometric login immediately on cold start).
+      await migrateLegacyBiometricPassword();
+
       const [email, password] = await Promise.all([
         AsyncStorage.getItem(BIOMETRIC_EMAIL_KEY),
-        AsyncStorage.getItem(BIOMETRIC_PASSWORD_KEY),
+        SecureStore.getItemAsync(BIOMETRIC_PASSWORD_KEY, SECURE_STORE_OPTIONS),
       ]);
 
       if (!email || !password) {
@@ -196,7 +246,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await Promise.all([
         AsyncStorage.setItem(BIOMETRIC_ENABLED_KEY, 'true'),
         AsyncStorage.setItem(BIOMETRIC_EMAIL_KEY, email),
-        AsyncStorage.setItem(BIOMETRIC_PASSWORD_KEY, password),
+        SecureStore.setItemAsync(
+          BIOMETRIC_PASSWORD_KEY,
+          password,
+          SECURE_STORE_OPTIONS,
+        ),
+        // Defensive: if a legacy AsyncStorage entry is still around (e.g.
+        // user re-enables biometrics before migration ran), wipe it.
+        AsyncStorage.removeItem(LEGACY_BIOMETRIC_PASSWORD_KEY),
       ]);
 
       setIsBiometricEnabled(true);
@@ -210,7 +267,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await Promise.all([
       AsyncStorage.removeItem(BIOMETRIC_ENABLED_KEY),
       AsyncStorage.removeItem(BIOMETRIC_EMAIL_KEY),
-      AsyncStorage.removeItem(BIOMETRIC_PASSWORD_KEY),
+      SecureStore.deleteItemAsync(BIOMETRIC_PASSWORD_KEY, SECURE_STORE_OPTIONS),
+      // Also wipe any legacy AsyncStorage entry left behind by upgraders.
+      AsyncStorage.removeItem(LEGACY_BIOMETRIC_PASSWORD_KEY),
     ]);
     setIsBiometricEnabled(false);
   }, []);
