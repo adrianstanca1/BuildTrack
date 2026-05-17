@@ -89,7 +89,7 @@ export default function DocumentsScreen() {
               } else if (path) {
                 await supabase.storage.from('buildtrack-documents').remove([`documents/${path}`]);
               }
-            } catch (e) {
+            } catch (_e) {
               // ignore storage delete errors
             }
             try {

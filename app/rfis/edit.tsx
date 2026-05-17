@@ -93,7 +93,7 @@ export default function EditRfiScreen() {
       });
       Alert.alert("Success", "RFI updated");
       router.back();
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to update RFI");
     } finally {
       setLoading(false);

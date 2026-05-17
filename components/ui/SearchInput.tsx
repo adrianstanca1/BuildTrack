@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, Pressable , useColorScheme } from 'react-native';
+import { TextInput, Pressable, useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { COLORS, RADIUS, TYPOGRAPHY } from '../../constants/theme';

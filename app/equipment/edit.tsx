@@ -80,7 +80,7 @@ export default function EditEquipmentScreen() {
       });
       Alert.alert("Success", "Equipment updated");
       router.back();
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to update equipment");
     } finally { setLoading(false); }
   };

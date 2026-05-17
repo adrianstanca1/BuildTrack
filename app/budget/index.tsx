@@ -19,7 +19,7 @@ const typeColors: Record<string, string> = {
 const formatCurrency = (n: number) => `£${(n || 0).toLocaleString()}`;
 
 export default function BudgetListScreen() {
-  const { entries, loading, fetchEntries } = useBudgetStore();
+  const { entries, loading: _loading, fetchEntries } = useBudgetStore();
   const [refreshing, setRefreshing] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
 

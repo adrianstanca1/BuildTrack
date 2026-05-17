@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { useTimesheetsStore } from '../../stores/timesheetsStore';
 import { useProjects } from '@/hooks/useProjects';
 import { useTeamStore } from '../../stores/teamStore';
-import { Clock, Calendar, PoundSterling, Briefcase, User } from 'lucide-react-native';
+import { Clock, Calendar, PoundSterling } from 'lucide-react-native';
 import type { TimesheetCategory, TimesheetStatus } from '../../types/field';
 
 const CATEGORIES: { value: TimesheetCategory; label: string; rateMult: number }[] = [

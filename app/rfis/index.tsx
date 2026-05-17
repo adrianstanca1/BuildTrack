@@ -11,7 +11,7 @@ export default function RfisScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { rfis, fetchRfis, loading } = useRfisStore();
+  const { rfis, fetchRfis, loading: _loading } = useRfisStore();
   const [filterStatus, setFilterStatus] = useState<'all' | 'draft' | 'submitted' | 'open' | 'answered' | 'closed'>('all');
   const [refreshing, setRefreshing] = useState(false);
 

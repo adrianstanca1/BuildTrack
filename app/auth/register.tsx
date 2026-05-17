@@ -24,7 +24,7 @@ export default function RegisterScreen() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { signUp, signInWithProvider, enableBiometric, isLoading } = useAuth();
+  const { signUp, signInWithProvider, enableBiometric: _enableBiometric, isLoading } = useAuth();
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';

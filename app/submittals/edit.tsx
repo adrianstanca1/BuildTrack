@@ -90,7 +90,7 @@ export default function EditSubmittalScreen() {
       });
       Alert.alert("Success", "Submittal updated");
       router.back();
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to update submittal");
     } finally {
       setLoading(false);

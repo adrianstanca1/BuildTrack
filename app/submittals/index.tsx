@@ -11,7 +11,7 @@ export default function SubmittalsScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { submittals, fetchSubmittals, loading } = useSubmittalsStore();
+  const { submittals, fetchSubmittals, loading: _loading } = useSubmittalsStore();
   const [filterStatus, setFilterStatus] = useState<'all' | 'draft' | 'submitted' | 'under-review' | 'approved' | 'rejected'>('all');
   const [refreshing, setRefreshing] = useState(false);
 

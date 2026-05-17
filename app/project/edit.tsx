@@ -80,7 +80,7 @@ export default function EditProjectScreen() {
       });
       Alert.alert("Success", "Project updated");
       router.back();
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to update project");
     } finally {
       setLoading(false);

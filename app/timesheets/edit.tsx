@@ -85,7 +85,7 @@ export default function EditTimesheetScreen() {
       });
       Alert.alert("Success", "Timesheet updated");
       router.back();
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to update timesheet");
     } finally { setLoading(false); }
   };

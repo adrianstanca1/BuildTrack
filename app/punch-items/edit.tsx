@@ -87,7 +87,7 @@ export default function EditPunchItemScreen() {
       });
       Alert.alert("Success", "Punch item updated");
       router.back();
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to update punch item");
     } finally {
       setLoading(false);

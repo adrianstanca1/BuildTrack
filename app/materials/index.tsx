@@ -52,7 +52,7 @@ export default function MaterialsScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { materials, fetchMaterials, loading } = useMaterialsStore();
+  const { materials, fetchMaterials, loading: _loading } = useMaterialsStore();
   const [filterCategory, setFilterCategory] = useState<MaterialCategory | 'all'>('all');
   const [showLowStockOnly, setShowLowStockOnly] = useState(false);
   const [refreshing, setRefreshing] = useState(false);

@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, useWindowDimensions, Pressable } from 'react-native';
+import { View, Text, ScrollView, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useProjectsStore } from '../../stores/projectsStore';
 import { AdminSidebar } from '../../components/admin/AdminSidebar';

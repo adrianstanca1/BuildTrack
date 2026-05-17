@@ -21,7 +21,7 @@ export default function ChangeOrdersScreen() {
   const isDark = colorScheme === 'dark';
   const theme = isDark ? COLORS.dark : COLORS.light;
 
-  const { changeOrders, fetchChangeOrders, loading } = useChangeOrdersStore();
+  const { changeOrders, fetchChangeOrders, loading: _loading } = useChangeOrdersStore();
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [refreshing, setRefreshing] = useState(false);
 

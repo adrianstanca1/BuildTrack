@@ -83,7 +83,7 @@ export default function EditDailyReportScreen() {
       });
       Alert.alert("Success", "Report updated");
       router.back();
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to update report");
     } finally {
       setLoading(false);

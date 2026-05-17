@@ -88,7 +88,7 @@ export default function EditPermitScreen() {
       });
       Alert.alert("Success", "Permit updated");
       router.back();
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to update permit");
     } finally {
       setLoading(false);

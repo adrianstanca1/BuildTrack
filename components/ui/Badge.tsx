@@ -1,5 +1,5 @@
 import { View, Text , useColorScheme } from 'react-native';
-import { COLORS, RADIUS, TYPOGRAPHY } from '../../constants/theme';
+import { COLORS, TYPOGRAPHY } from '../../constants/theme';
 
 export type BadgeVariant = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info';
 

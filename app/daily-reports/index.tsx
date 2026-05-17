@@ -20,7 +20,7 @@ export default function DailyReportsScreen() {
   const isDark = colorScheme === 'dark';
   const theme = isDark ? COLORS.dark : COLORS.light;
 
-  const { reports, fetchReports, loading } = useDailyReportsStore();
+  const { reports, fetchReports, loading: _loading } = useDailyReportsStore();
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [refreshing, setRefreshing] = useState(false);
 

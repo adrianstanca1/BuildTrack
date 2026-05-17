@@ -29,7 +29,7 @@ export default function PunchItemsScreen() {
   const isDark = colorScheme === 'dark';
   const theme = isDark ? COLORS.dark : COLORS.light;
 
-  const { punchItems, fetchPunchItems, loading } = usePunchItemsStore();
+  const { punchItems, fetchPunchItems, loading: _loading } = usePunchItemsStore();
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [refreshing, setRefreshing] = useState(false);

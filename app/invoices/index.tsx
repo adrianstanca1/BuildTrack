@@ -11,7 +11,7 @@ export default function InvoicesScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { invoices, fetchInvoices, loading } = useInvoicesStore();
+  const { invoices, fetchInvoices, loading: _loading } = useInvoicesStore();
   const [filterStatus, setFilterStatus] = useState<'all' | 'draft' | 'submitted' | 'approved' | 'paid' | 'overdue'>('all');
   const [refreshing, setRefreshing] = useState(false);
 

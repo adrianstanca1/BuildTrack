@@ -20,7 +20,7 @@ export default function DelayNotesScreen() {
   const isDark = colorScheme === 'dark';
   const theme = isDark ? COLORS.dark : COLORS.light;
 
-  const { delayNotes, fetchDelayNotes, loading } = useDelayNotesStore();
+  const { delayNotes, fetchDelayNotes, loading: _loading } = useDelayNotesStore();
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [refreshing, setRefreshing] = useState(false);
 

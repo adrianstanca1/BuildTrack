@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEquipmentStore } from '../../stores/equipmentStore';
 import { Card } from '../../components/ui/Card';
-import { colors } from '../../constants/colors';
+
 import type { EquipmentType, EquipmentStatus } from '../../types/field';
 
 const EQUIPMENT_TYPES: EquipmentType[] = [

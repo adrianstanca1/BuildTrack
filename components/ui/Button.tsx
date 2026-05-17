@@ -1,11 +1,4 @@
-import {
-  Pressable,
-  Text,
-  ActivityIndicator,
-  View,
-  type PressableProps,
-  type ViewStyle,
-} from 'react-native';
+import { Pressable, Text, ActivityIndicator, type PressableProps, type ViewStyle } from 'react-native';
 import { useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, RADIUS, TYPOGRAPHY } from '../../constants/theme';
