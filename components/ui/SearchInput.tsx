@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { View, TextInput, Pressable } from 'react-native';
+import { View, TextInput, Pressable , useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { COLORS, RADIUS, TYPOGRAPHY } from '../../constants/theme';
-import { useColorScheme } from 'react-native';
 
 interface SearchInputProps {
   value: string;

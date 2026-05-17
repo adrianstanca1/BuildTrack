@@ -1,8 +1,7 @@
-import { View, Text } from 'react-native';
+import { View, Text , useColorScheme } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useEffect } from 'react';
 import { COLORS, RADIUS, TYPOGRAPHY } from '../../constants/theme';
-import { useColorScheme } from 'react-native';
 
 interface ProgressBarProps {
   progress: number; // 0–1

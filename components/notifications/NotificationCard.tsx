@@ -1,7 +1,6 @@
-import { View, Text, Pressable, useColorScheme } from 'react-native';
+import { View, Text, Pressable, useColorScheme , Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
-import { Animated } from 'react-native';
 import { useRef } from 'react';
 import { AppNotification, NotificationType } from '../../stores/notificationsStore';
 import { colors } from '../../constants/colors';
