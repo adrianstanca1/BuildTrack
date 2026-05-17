@@ -1,0 +1,11 @@
+# Known false-positives + historical leaks already triaged.
+# Auto-generated 2026-05-17. New findings should be reviewed before adding here.
+
+108a8b2135de3a164bcaf12fe118565d51563254:eas.json:generic-api-key:12
+108a8b2135de3a164bcaf12fe118565d51563254:eas.json:generic-api-key:27
+108a8b2135de3a164bcaf12fe118565d51563254:eas.json:generic-api-key:49
+108a8b2135de3a164bcaf12fe118565d51563254:eas.json:generic-api-key:58
+65abe9f6b0d685d1080c7c58e27023978c048341:eas.json:generic-api-key:75
+6f785f45af342a8293ee2d06bb18ea587454466b:backend/app/services/__init__.py:jwt:9
+6f785f45af342a8293ee2d06bb18ea587454466b:backend/app/services/__init__.py:jwt:13
+6f785f45af342a8293ee2d06bb18ea587454466b:eas.json:generic-api-key:72
