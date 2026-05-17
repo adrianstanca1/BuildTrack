@@ -185,7 +185,7 @@ export default function TasksScreen() {
             <View style={{ alignItems: 'center', paddingVertical: 60 }}>
               <Ionicons name="list" size={56} color={theme.textMuted} />
               <Text style={{ color: theme.textMuted, marginTop: 12, fontSize: 16 }}>No tasks found</Text>
-              <TouchableOpacity onPress={() => router.push('/tasks/create')} style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#3b82f6', borderRadius: 12 }}>
+              <TouchableOpacity onPress={() => router.push('/task/create')} style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#3b82f6', borderRadius: 12 }}>
                 <Text style={{ color: '#fff', fontWeight: '600' }}>Create Task</Text>
               </TouchableOpacity>
             </View>
