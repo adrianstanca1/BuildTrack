@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { View, Text, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { Text, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { useStripe, type PaymentSheetError } from '@stripe/stripe-react-native';
 import { apiClient } from '../../services/api';
 

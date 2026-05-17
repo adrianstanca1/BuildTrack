@@ -1,5 +1,5 @@
 import { View, Text, Image } from 'react-native';
-import { COLORS, RADIUS } from '../../constants/theme';
+import { COLORS } from '../../constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface AvatarProps {

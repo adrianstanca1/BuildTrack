@@ -58,7 +58,7 @@ export default function SafetyScreen() {
     setLoading(true);
     try {
       const { data: u } = await supabase.auth.getUser();
-      const uid = u.user?.id;
+      const _uid = u.user?.id;
       const [{ data: inc }, { data: insp }] = await Promise.all([
         supabase.from('incidents').select('*').order('created_at', { ascending: false }),
         supabase.from('inspections').select('*').order('created_at', { ascending: false }),

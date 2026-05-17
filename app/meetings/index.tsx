@@ -12,7 +12,7 @@ export default function MeetingsScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { meetings, fetchMeetings, loading } = useMeetingsStore();
+  const { meetings, fetchMeetings, loading: _loading } = useMeetingsStore();
   const [filterStatus, setFilterStatus] = useState<MeetingStatus | 'all'>('all');
   const [refreshing, setRefreshing] = useState(false);
 

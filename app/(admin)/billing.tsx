@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, useWindowDimensions, Pressable } from 'react-native';
+import { View, Text, ScrollView, useWindowDimensions } from 'react-native';
 import { useAdmin } from '../../hooks/useAdmin';
 import { AdminSidebar } from '../../components/admin/AdminSidebar';
 import { Ionicons } from '@expo/vector-icons';

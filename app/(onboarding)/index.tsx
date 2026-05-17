@@ -1,20 +1,12 @@
-import { useState, useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  useColorScheme,
-  Dimensions,
-  FlatList,
-  type ViewToken,
-} from 'react-native';
+import { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, useColorScheme, FlatList, type ViewToken } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { ONBOARDING_KEY } from '../../constants/storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY, SHADOWS, SCREEN_WIDTH } from '../../constants/theme';
+import { COLORS, RADIUS, TYPOGRAPHY, SHADOWS, SCREEN_WIDTH } from '../../constants/theme';
 
 const slides = [
   {

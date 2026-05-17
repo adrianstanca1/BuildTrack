@@ -121,7 +121,7 @@ export default function EditChangeOrderScreen() {
       });
       Alert.alert("Success", "Change order updated");
       router.back();
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to update change order");
     } finally {
       setLoading(false);

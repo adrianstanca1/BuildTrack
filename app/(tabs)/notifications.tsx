@@ -125,7 +125,7 @@ export default function NotificationsScreen() {
         markAsRead(notification.id);
         try {
           await supabase.from('notifications').update({ read: true }).eq('id', notification.id);
-        } catch (e) {
+        } catch (_e) {
           // silent fail — already updated locally
         }
       }
@@ -163,7 +163,7 @@ export default function NotificationsScreen() {
     markAllAsRead();
     try {
       await supabase.from('notifications').update({ read: true }).eq('read', false);
-    } catch (e) {
+    } catch (_e) {
       // silent fail — already updated locally
     }
   }, [user, unreadCount, markAllAsRead]);

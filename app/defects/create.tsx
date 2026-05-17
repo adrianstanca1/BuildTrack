@@ -6,7 +6,7 @@ import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '@/constants/theme';
 import { Button } from '@/components/ui/Button';
 import { useDefectsStore } from '../../stores/defectsStore';
 import { useProjects } from '@/hooks/useProjects';
-import { Bug, MapPin, FileText } from 'lucide-react-native';
+import { Bug, MapPin } from 'lucide-react-native';
 
 const SEVERITIES = [
   { value: 'cosmetic', label: 'Cosmetic', color: COLORS.dark.success },

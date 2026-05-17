@@ -90,7 +90,7 @@ export default function EditDefectScreen() {
       });
       Alert.alert("Success", "Defect updated");
       router.back();
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to update defect");
     } finally {
       setLoading(false);

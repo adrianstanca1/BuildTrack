@@ -37,7 +37,7 @@ export default function DashboardScreen() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const userId = (await supabase.auth.getUser()).data.user?.id;
+      const _userId = (await supabase.auth.getUser()).data.user?.id;
       const { data: p } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
       const projs = p || [];
       setProjects(projs);

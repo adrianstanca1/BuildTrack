@@ -11,7 +11,7 @@ export default function EquipmentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { equipment, deleteEquipment, updateEquipment } = useEquipmentStore();
+  const { equipment, deleteEquipment, updateEquipment: _updateEquipment } = useEquipmentStore();
 
   const item = equipment.find((e) => e.id === id);
 

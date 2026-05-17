@@ -6,7 +6,7 @@ import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '@/constants/theme';
 import { Button } from '@/components/ui/Button';
 import { useCreateIncident } from '@/hooks/useSafety';
 import { useProjects } from '@/hooks/useProjects';
-import { AlertTriangle, MapPin, Calendar, User, FileText } from 'lucide-react-native';
+import { AlertTriangle, MapPin } from 'lucide-react-native';
 
 const SEVERITIES = [
   { value: 'low', label: 'Low', color: COLORS.dark.success },

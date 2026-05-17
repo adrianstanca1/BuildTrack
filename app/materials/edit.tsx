@@ -78,7 +78,7 @@ export default function EditMaterialScreen() {
       });
       Alert.alert("Success", "Material updated");
       router.back();
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to update material");
     } finally { setLoading(false); }
   };

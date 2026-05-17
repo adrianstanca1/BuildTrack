@@ -1,12 +1,5 @@
 import React, { useRef, useState, useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  useColorScheme,
-  ActivityIndicator,
-  Alert,
-} from 'react-native';
+import { View, Text, Pressable, useColorScheme, ActivityIndicator } from 'react-native';
 import MapView, { Region } from 'react-native-maps';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';

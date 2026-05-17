@@ -83,7 +83,7 @@ export default function EditInvoiceScreen() {
       });
       Alert.alert("Success", "Invoice updated");
       router.back();
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to update invoice");
     } finally {
       setLoading(false);

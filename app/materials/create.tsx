@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMaterialsStore } from '../../stores/materialsStore';
 import { Card } from '../../components/ui/Card';
-import { colors } from '../../constants/colors';
+
 import type { MaterialCategory } from '../../types/field';
 
 const CATEGORIES: MaterialCategory[] = [

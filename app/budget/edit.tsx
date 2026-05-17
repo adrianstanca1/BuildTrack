@@ -82,7 +82,7 @@ export default function EditBudgetScreen() {
       });
       Alert.alert("Success", "Entry updated");
       router.back();
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to update entry");
     } finally {
       setLoading(false);

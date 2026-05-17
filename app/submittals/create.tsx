@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSubmittalsStore } from '../../stores/submittalsStore';
 import { Card } from '../../components/ui/Card';
-import { colors } from '../../constants/colors';
+
 
 export default function CreateSubmittalScreen() {
   const router = useRouter();

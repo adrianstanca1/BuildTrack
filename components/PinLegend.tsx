@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, SPACING, RADIUS } from '../constants/theme';
+import { COLORS, SPACING } from '../constants/theme';
 
 const LEGEND_ITEMS = [
   { label: 'Open', color: '#ef4444' },

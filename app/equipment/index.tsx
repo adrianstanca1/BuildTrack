@@ -12,7 +12,7 @@ export default function EquipmentScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { equipment, fetchEquipment, loading } = useEquipmentStore();
+  const { equipment, fetchEquipment, loading: _loading } = useEquipmentStore();
   const [filterStatus, setFilterStatus] = useState<EquipmentStatus | 'all'>('all');
   const [filterType, setFilterType] = useState<EquipmentType | 'all'>('all');
   const [refreshing, setRefreshing] = useState(false);

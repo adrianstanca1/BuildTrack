@@ -3,7 +3,7 @@ import { useAdmin } from '../../hooks/useAdmin';
 import { useAdminStore, type UserRole } from '../../stores/billingStore';
 import { AdminSidebar } from '../../components/admin/AdminSidebar';
 import { DataTable } from '../../components/admin/DataTable';
-import { supabase } from '../../lib/supabase';
+
 
 export default function AdminUsersScreen() {
   const { width } = useWindowDimensions();

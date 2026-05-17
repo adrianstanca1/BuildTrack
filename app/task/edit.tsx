@@ -88,7 +88,7 @@ export default function EditTaskScreen() {
       });
       Alert.alert("Success", "Task updated");
       router.back();
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to update task");
     } finally {
       setLoading(false);

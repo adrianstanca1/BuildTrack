@@ -1,14 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  Alert,
-  StyleSheet,
-  Dimensions,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, Alert, Dimensions, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,7 +17,7 @@ import PinOverlay from '../../components/PinOverlay';
 import { PinLegend } from '../../components/PinLegend';
 import { Card } from '../../components/ui/Card';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../../constants/theme';
-import { supabase } from '../../lib/supabase';
+
 import type { DrawingPinOverlayItem } from '../../components/PinOverlay';
 
 const { width: SCREEN_W } = Dimensions.get('window');

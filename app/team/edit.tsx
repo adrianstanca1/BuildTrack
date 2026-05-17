@@ -80,7 +80,7 @@ export default function EditTeamScreen() {
       });
       Alert.alert("Success", "Worker updated");
       router.back();
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to update worker");
     } finally {
       setLoading(false);

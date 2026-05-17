@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, useColorScheme } from 'react-native';
+import { Text, TouchableOpacity, ActivityIndicator, useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useOfflineSync } from '@/hooks/useOfflineSync';
 

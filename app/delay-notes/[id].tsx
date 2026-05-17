@@ -33,7 +33,7 @@ export default function DelayNoteDetailScreen() {
   const textColor = isDark ? '#f1f5f9' : '#0f172a';
   const mutedColor = isDark ? '#94a3b8' : '#64748b';
 
-  const { delayNotes, fetchDelayNotes, updateDelayNote, deleteDelayNote } = useDelayNotesStore();
+  const { delayNotes, fetchDelayNotes, updateDelayNote: _updateDelayNote, deleteDelayNote } = useDelayNotesStore();
   const note = delayNotes.find((n) => n.id === id);
 
   useEffect(() => {

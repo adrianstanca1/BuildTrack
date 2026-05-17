@@ -13,7 +13,7 @@ type StatusFilter = typeof STATUS_FILTERS[number];
 
 export default function TeamListScreen() {
   const router = useRouter();
-  const { workers, loading, error, fetchWorkers } = useTeamStore();
+  const { workers, loading: _loading, error, fetchWorkers } = useTeamStore();
 
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');

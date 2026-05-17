@@ -6,13 +6,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePermitsStore } from '../../stores/permitsStore';
 import { Card } from '../../components/ui/Card';
 import { colors } from '../../constants/colors';
-import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../../constants/theme';
+import { COLORS } from '../../constants/theme';
 
 export default function PermitsScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { permits, fetchPermits, loading } = usePermitsStore();
+  const { permits, fetchPermits, loading: _loading } = usePermitsStore();
   const [filterStatus, setFilterStatus] = useState<'all' | 'draft' | 'submitted' | 'approved' | 'expired'>('all');
   const [refreshing, setRefreshing] = useState(false);
 

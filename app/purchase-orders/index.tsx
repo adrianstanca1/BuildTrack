@@ -22,7 +22,7 @@ export default function PurchaseOrdersScreen() {
   const isDark = colorScheme === 'dark';
   const theme = isDark ? COLORS.dark : COLORS.light;
 
-  const { purchaseOrders, fetchPurchaseOrders, loading } = usePurchaseOrdersStore();
+  const { purchaseOrders, fetchPurchaseOrders, loading: _loading } = usePurchaseOrdersStore();
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [refreshing, setRefreshing] = useState(false);
 

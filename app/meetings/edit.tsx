@@ -81,7 +81,7 @@ export default function EditMeetingScreen() {
       });
       Alert.alert("Success", "Meeting updated");
       router.back();
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to update meeting");
     } finally { setLoading(false); }
   };

@@ -97,7 +97,7 @@ export default function EditPurchaseOrderScreen() {
       });
       Alert.alert("Success", "Purchase order updated");
       router.back();
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to update purchase order");
     } finally { setLoading(false); }
   };

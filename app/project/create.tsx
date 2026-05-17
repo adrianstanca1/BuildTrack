@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '@/constants/theme';
 import { Button } from '@/components/ui/Button';
 import { useCreateProject } from '@/hooks/useProjects';
-import { Calendar, MapPin, DollarSign, FileText, Tag } from 'lucide-react-native';
+import { MapPin, DollarSign } from 'lucide-react-native';
 
 const PROJECT_STATUSES = [
   { value: 'planning', label: 'Planning', color: COLORS.dark.warning },

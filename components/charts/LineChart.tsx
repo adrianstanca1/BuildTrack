@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, useColorScheme } from 'react-native';
+import { View, useColorScheme } from 'react-native';
 import Svg, { Path, Circle, Defs, LinearGradient, Stop, Text as SvgText, G } from 'react-native-svg';
 import { COLORS } from '@/constants/theme';
 

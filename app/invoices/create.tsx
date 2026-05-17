@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useInvoicesStore } from '../../stores/invoicesStore';
 import { Card } from '../../components/ui/Card';
-import { colors } from '../../constants/colors';
+
 
 const STATUSES = [
   { value: 'draft' as const, label: 'Draft' },

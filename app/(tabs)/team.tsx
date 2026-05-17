@@ -42,7 +42,7 @@ export default function TeamScreen() {
     setLoading(true);
     try {
       const { data: u } = await supabase.auth.getUser();
-      const uid = u.user?.id;
+      const _uid = u.user?.id;
       const { data, error } = await supabase
         .from('workers')
         .select('id, name, role, status, avatar, phone, email, project_assignments')

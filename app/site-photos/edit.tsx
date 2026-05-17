@@ -50,7 +50,7 @@ export default function EditSitePhotoScreen() {
       });
       Alert.alert("Success", "Photo updated");
       router.back();
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to update photo");
     } finally {
       setLoading(false);

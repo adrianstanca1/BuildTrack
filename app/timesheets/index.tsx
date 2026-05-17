@@ -46,7 +46,7 @@ export default function TimesheetsScreen() {
   const {
     timesheets,
     fetchTimesheets,
-    loading,
+    loading: _loading,
     getTotalHoursForDate,
     getTotalPayForDate,
   } = useTimesheetsStore();

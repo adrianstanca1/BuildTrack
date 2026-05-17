@@ -1,6 +1,6 @@
 import { View, Text , useColorScheme } from 'react-native';
 import { Avatar } from './Avatar';
-import { COLORS, TYPOGRAPHY } from '../../constants/theme';
+import { COLORS } from '../../constants/theme';
 
 interface User {
   uri?: string;

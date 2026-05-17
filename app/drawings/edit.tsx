@@ -73,7 +73,7 @@ export default function EditDrawingScreen() {
       });
       Alert.alert("Success", "Drawing updated");
       router.back();
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to update drawing");
     } finally {
       setLoading(false);

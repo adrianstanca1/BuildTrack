@@ -6,13 +6,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDefectsStore } from '../../stores/defectsStore';
 import { Card } from '../../components/ui/Card';
 import { colors } from '../../constants/colors';
-import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../../constants/theme';
+import { COLORS } from '../../constants/theme';
 
 export default function DefectsScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { defects, fetchDefects, loading } = useDefectsStore();
+  const { defects, fetchDefects, loading: _loading } = useDefectsStore();
   const [filterStatus, setFilterStatus] = useState<'all' | 'open' | 'in-progress' | 'resolved'>('all');
   const [refreshing, setRefreshing] = useState(false);
 

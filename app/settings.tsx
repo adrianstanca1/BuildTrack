@@ -3,8 +3,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuth } from '../contexts/AuthContext';
-import { COLORS, RADIUS, TYPOGRAPHY } from '../constants/theme';
+
+
 import { colors } from '../constants/colors';
 
 export default function SettingsScreen() {

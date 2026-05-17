@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  useColorScheme,
-} from "react-native";
+import { View, ScrollView, Text, useColorScheme } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/constants/theme";
