@@ -18,11 +18,14 @@ const supabaseUrl =
       ? 'http://127.0.0.1:54321'
       : 'https://buildtrack.cortexbuildpro.com');
 
-const supabaseKey =
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
-  (isProductionChannel
-    ? 'eyJhbG...demo'
-    : 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH');
+// No fallback — a missing key must fail the build/launch loudly rather
+// than silently shipping a hardcoded publishable key in the bundle.
+const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+if (!supabaseKey) {
+  throw new Error(
+    'EXPO_PUBLIC_SUPABASE_ANON_KEY is required; check your .env file or EAS build profile env block.',
+  );
+}
 
 // ─── API Base URL ───────────────────────────────────────────────────────
 export const API_URL =
