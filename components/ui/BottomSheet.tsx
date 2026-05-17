@@ -9,8 +9,7 @@ import {
   Dimensions,
   TouchableWithoutFeedback,
   StyleSheet,
-} from 'react-native';
-import { useColorScheme } from 'react-native';
+ useColorScheme } from 'react-native';
 import { COLORS, RADIUS, TYPOGRAPHY } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 

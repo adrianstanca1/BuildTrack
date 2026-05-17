@@ -1,7 +1,6 @@
-import { Stack } from 'expo-router';
+import { Stack , Redirect } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBillingStore } from '../../stores/billingStore';
-import { Redirect } from 'expo-router';
 import { useColorScheme, View, Text } from 'react-native';
 import { useEffect } from 'react';
 

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable , useColorScheme } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,7 +9,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, RADIUS, TYPOGRAPHY } from '../../constants/theme';
-import { useColorScheme } from 'react-native';
 
 interface ToastProps {
   message: string;

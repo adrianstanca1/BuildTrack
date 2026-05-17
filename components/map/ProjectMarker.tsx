@@ -1,7 +1,6 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable , useColorScheme } from 'react-native';
 import { Marker, Callout } from 'react-native-maps';
-import { useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Project, ProjectStatus } from '../../types';
 import { colors } from '../../constants/colors';

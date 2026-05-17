@@ -1,7 +1,6 @@
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable , useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY } from '../../constants/theme';
-import { useColorScheme } from 'react-native';
 
 interface SectionHeaderProps {
   title: string;
