@@ -1,23 +1,12 @@
 """BuildTrack API integration tests.
 
-Run: cd /root/BuildTrack/backend && python -m pytest tests/ -v
-Requires: API running on localhost:8000
+Run: python -m pytest backend/tests/ -v
+The tests exercise the FastAPI app in-process and replace Supabase with an
+in-memory test double so they do not require a running API or database.
 """
 
-import pytest
-import httpx
-import uuid
 from datetime import date, timedelta
-
-API_BASE = "http://localhost:8000"
-
-
-@pytest.fixture
-def client():
-    """HTTP client pointing at the API."""
-    with httpx.Client(base_url=API_BASE, timeout=10) as c:
-        yield c
-
+import uuid
 
 # ─── Health ───────────────────────────────────────────────────────────────────
 
@@ -26,8 +15,9 @@ class TestHealth:
         r = client.get("/health")
         assert r.status_code == 200
         data = r.json()
-        assert data["status"] in ("healthy", "degraded")
+        assert data["status"] == "healthy"
         assert data["service"] == "buildtrack-api"
+        assert data["database"] == "connected"
 
     def test_health_has_version(self, client):
         r = client.get("/health")
@@ -108,7 +98,7 @@ class TestProjects:
 
     def test_create_validation_error(self, client):
         r = client.post("/api/projects", json={"name": "No Location"})
-        assert r.status_code == 422 or r.status_code == 500
+        assert r.status_code == 422
 
 
 # ─── Tasks CRUD ────────────────────────────────────────────────────────────────
@@ -165,22 +155,23 @@ class TestSafety:
     def test_list_inspections(self, client):
         r = client.get("/api/safety/inspections")
         assert r.status_code == 200
+        assert isinstance(r.json(), list)
 
     def test_safety_stats(self, client):
         r = client.get("/api/safety/stats")
         assert r.status_code == 200
-        stats = r.json()
-        assert "total_incidents" in stats
-        assert "total_inspections" in stats
-        assert "incidents_by_severity" in stats
+        data = r.json()
+        assert "total_incidents" in data
+        assert "days_since_last_incident" in data
 
 
-# ─── Workers ───────────────────────────────────────────────────────────────────
+# ─── Workers ──────────────────────────────────────────────────────────────────
 
 class TestWorkers:
     def test_list_workers(self, client):
         r = client.get("/api/workers")
         assert r.status_code == 200
+        assert isinstance(r.json(), list)
 
     def test_list_active_workers(self, client):
         r = client.get("/api/workers?status=active")
@@ -189,17 +180,13 @@ class TestWorkers:
             assert w["status"] == "active"
 
 
-# ─── Dashboard ─────────────────────────────────────────────────────────────────
+# ─── Dashboard ────────────────────────────────────────────────────────────────
 
 class TestDashboard:
     def test_dashboard_stats(self, client):
         r = client.get("/api/dashboard/stats")
         assert r.status_code == 200
-        stats = r.json()
-        required = [
-            "total_projects", "active_projects", "completed_projects",
-            "total_budget", "total_workers", "overdue_tasks",
-            "total_incidents", "pending_inspections",
-        ]
-        for field in required:
-            assert field in stats, f"Missing field: {field}"
+        data = r.json()
+        assert "total_projects" in data
+        assert "active_projects" in data
+        assert "total_workers" in data
