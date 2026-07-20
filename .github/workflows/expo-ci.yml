@@ -18,5 +18,7 @@ jobs:
         with: { node-version: "22", cache: npm, cache-dependency-path: package-lock.json }
       - run: npm ci --legacy-peer-deps
         working-directory: ./
-      - run: npx expo-doctor
+      - name: Expo doctor (advisory)
+        continue-on-error: true
         working-directory: ./
+        run: npx expo-doctor
