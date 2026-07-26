@@ -6,7 +6,7 @@ Handles interactive prompts from EAS CLI including Apple ID + 2FA
 import pty, os, select, termios, struct, fcntl, sys, time
 
 APPLE_ID = "adrian.stanca1@icloud.com"
-APPLE_PASSWORD = "***REDACTED***"
+APPLE_PASSWORD = os.environ.get("APPLE_PASSWORD", "")  # loaded from env; never hardcode
 TEAM_ID = "4G3G5MX9BH"
 
 def main():

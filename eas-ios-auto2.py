@@ -5,7 +5,7 @@ Handles pre-filled Apple ID state from saved keychain
 """
 import pty, os, select, termios, sys, time
 
-APPLE_PASSWORD = "***REDACTED***"
+APPLE_PASSWORD = os.environ.get("APPLE_PASSWORD", "")  # loaded from env; never hardcode
 
 def main():
     master, slave = pty.openpty()

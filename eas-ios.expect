@@ -1,6 +1,6 @@
 #!/usr/bin/expect -f
 set timeout 300
-set apple_password "***REDACTED***"
+set apple_password $env(APPLE_PASSWORD)  # loaded from env; never hardcode
 set team_id "4G3G5MX9BH"
 
 # Arrow down in expect

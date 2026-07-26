@@ -1,6 +1,6 @@
 #!/usr/bin/expect -f
 set timeout 300
-set apple_password "***REDACTED***"
+set apple_password $env(APPLE_PASSWORD)  # loaded from env; never hardcode
 set arrow_down "\033\[B"
 
 spawn eas credentials --platform ios
